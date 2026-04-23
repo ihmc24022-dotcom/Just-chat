@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>我的 GitHub 聊天平台</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #ece5dd; display: flex; justify-content: center; padding: 20px; margin: 0; height: 100vh; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #ece5dd; display: flex; justify-content: center; align-items: center; padding: 20px; margin: 0; height: 100vh; box-sizing: border-box; }
         
         /* 登入畫面樣式 */
         #login-screen {
@@ -29,15 +29,29 @@
         }
         .login-box button:disabled { background: #888; cursor: not-allowed; }
 
-        /* 聊天容器 */
-        #chat-container { width: 100%; max-width: 400px; background: white; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); overflow: hidden; display: none; flex-direction: column; height: 90vh; }
+        /* 🌟 主容器 (現在變成左右兩塊了) */
+        #main-container { width: 100%; max-width: 900px; background: white; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); overflow: hidden; display: none; flex-direction: row; height: 90vh; }
+        
+        /* 🌟 左側聯絡人欄位 */
+        #sidebar { width: 280px; background: #fff; border-right: 1px solid #ddd; display: flex; flex-direction: column; }
+        .sidebar-header { background: #f0f2f5; padding: 10px 15px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #ddd; height: 40px; }
+        .sidebar-header .contact-name { font-weight: bold; color: #333; }
+        
+        #contact-list { flex: 1; overflow-y: auto; background: #fff; }
+        .contact-item { display: flex; align-items: center; padding: 12px 15px; cursor: pointer; border-bottom: 1px solid #f2f2f2; gap: 12px; transition: 0.2s; }
+        .contact-item:hover { background: #f5f6f6; }
+        .contact-item.active { background: #ebebeb; }
+        .contact-item .contact-name { font-weight: 500; font-size: 15px; color: #000; }
+
+        /* 右側聊天區域 */
+        #chat-container { flex: 1; display: flex; flex-direction: column; background: #efeae2; }
         
         #chat-header {
             background-color: #075e54; color: white; padding: 10px 15px;
-            display: flex; align-items: center; justify-content: space-between; box-shadow: 0 1px 3px rgba(0,0,0,0.1); z-index: 10;
+            display: flex; align-items: center; justify-content: space-between; box-shadow: 0 1px 3px rgba(0,0,0,0.1); z-index: 10; height: 40px;
         }
         .header-left { display: flex; align-items: center; gap: 12px; }
-        .profile-pic { font-size: 20px; background: #dfe5e7; color: #555; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; }
+        .profile-pic { font-size: 20px; background: #dfe5e7; color: #555; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;}
         .contact-info { display: flex; flex-direction: column; }
         .contact-name { font-weight: bold; font-size: 16px; }
         .contact-status { font-size: 12px; color: #d1f2eb; margin-top: 2px; }
@@ -72,32 +86,51 @@
     </div>
 </div>
 
-<div id="chat-container">
-    <div id="chat-header">
-        <div class="header-left">
-            <div class="profile-pic">👥</div>
-            <div class="contact-info">
-                <div class="contact-name">公開聊天室</div>
-                <div class="contact-status" id="user-display-status">大家都在這裡</div>
+<div id="main-container">
+    
+    <div id="sidebar">
+        <div class="sidebar-header">
+            <div style="display:flex; align-items:center; gap:10px;">
+                <div class="profile-pic" style="width:35px; height:35px; font-size:16px;">👤</div>
+                <div class="contact-name" id="my-name-display">我的名字</div>
             </div>
+            <button id="logout-btn">登出</button>
         </div>
-        <button id="logout-btn">登出</button>
+        
+        <div id="contact-list">
+            <div class="contact-item active" id="global-chat-btn">
+                <div class="profile-pic">👥</div>
+                <div class="contact-name">公開聊天室 (所有人)</div>
+            </div>
+            <div id="dynamic-contacts"></div>
+        </div>
     </div>
 
-    <div id="chat-box">
+    <div id="chat-container">
+        <div id="chat-header">
+            <div class="header-left">
+                <div class="profile-pic" id="chat-header-icon">👥</div>
+                <div class="contact-info">
+                    <div class="contact-name" id="chat-header-name">公開聊天室</div>
+                    <div class="contact-status" id="chat-header-status">大家都在這裡</div>
+                </div>
+            </div>
         </div>
-    
-    <div id="input-area">
-        <label for="file-input" class="icon-btn">📎</label>
-        <input type="file" id="file-input" accept="image/*">
-        <input type="text" id="msg-input" placeholder="輸入訊息...">
-        <button id="send-btn">發送</button>
+
+        <div id="chat-box">
+            </div>
+        
+        <div id="input-area">
+            <label for="file-input" class="icon-btn">📎</label>
+            <input type="file" id="file-input" accept="image/*">
+            <input type="text" id="msg-input" placeholder="輸入訊息...">
+            <button id="send-btn">發送</button>
+        </div>
     </div>
 </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
-    // 🌟 引入了 doc, getDoc, setDoc 來處理帳號密碼的讀寫
     import { getFirestore, collection, addDoc, serverTimestamp, onSnapshot, query, orderBy, doc, getDoc, setDoc } 
         from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
 
@@ -117,68 +150,68 @@
     const CLOUDINARY_UPLOAD_PRESET = "ml_default";
 
     let currentUser = "";
+    let currentRoom = "global"; // 🌟 新增：用來記錄現在在哪個聊天室 (預設為公開)
 
     const loginScreen = document.getElementById('login-screen');
+    const mainContainer = document.getElementById('main-container');
     const joinBtn = document.getElementById('join-btn');
     const usernameInput = document.getElementById('username-input');
-    const passwordInput = document.getElementById('password-input'); // 🌟 密碼輸入框
-    const chatContainer = document.getElementById('chat-container');
+    const passwordInput = document.getElementById('password-input');
+    
+    const myNameDisplay = document.getElementById('my-name-display');
+    const dynamicContacts = document.getElementById('dynamic-contacts');
+    const globalChatBtn = document.getElementById('global-chat-btn');
+    
+    const chatHeaderName = document.getElementById('chat-header-name');
+    const chatHeaderIcon = document.getElementById('chat-header-icon');
+    const chatHeaderStatus = document.getElementById('chat-header-status');
     const chatBox = document.getElementById('chat-box');
     const msgInput = document.getElementById('msg-input');
     const fileInput = document.getElementById('file-input');
     const sendBtn = document.getElementById('send-btn');
     const logoutBtn = document.getElementById('logout-btn');
-    const userDisplayStatus = document.getElementById('user-display-status');
 
     const messagesRef = collection(db, "messages");
+    const usersRef = collection(db, "users");
 
-    // 檢查瀏覽器是否已經記住了這個使用者
+    // 檢查瀏覽器記憶
     const savedUser = localStorage.getItem("chat_username");
     const savedPass = localStorage.getItem("chat_password");
     
     if (savedUser && savedPass) {
         currentUser = savedUser;
-        showChatRoom();
+        showApp();
     } else {
         loginScreen.style.display = "flex";
     }
 
-    // 🌟 處理帶有密碼的登入/註冊邏輯
+    // 登入邏輯
     joinBtn.addEventListener('click', async () => {
         const name = usernameInput.value.trim();
         const pass = passwordInput.value.trim();
         
-        if (!name || !pass) {
-            alert("請輸入帳號和密碼！");
-            return;
-        }
+        if (!name || !pass) return alert("請輸入帳號和密碼！");
 
         joinBtn.innerText = "驗證中...";
         joinBtn.disabled = true;
 
         try {
-            // 在 Firestore 中建立一個名為 "users" 的集合來存帳號密碼
             const userRef = doc(db, "users", name);
             const userSnap = await getDoc(userRef);
 
             if (userSnap.exists()) {
-                // 如果帳號已經存在，核對密碼
                 if (userSnap.data().password === pass) {
-                    // 密碼正確，登入成功
                     loginSuccess(name, pass);
                 } else {
-                    // 密碼錯誤
-                    alert("密碼錯誤！這個名字已經被註冊了，請輸入正確的密碼或換一個名字。");
+                    alert("密碼錯誤！這個名字已經被註冊了。");
                 }
             } else {
-                // 如果帳號不存在，自動幫他註冊
-                await setDoc(userRef, { password: pass });
-                alert("新帳號建立成功！歡迎加入聊天室。");
+                await setDoc(userRef, { password: pass, createdAt: serverTimestamp() });
                 loginSuccess(name, pass);
             }
         } catch (error) {
-            console.error("登入系統發生錯誤:", error);
-            alert("無法連線到資料庫，請稍後再試！");
+            console.error("登入錯誤:", error);
+            alert("系統錯誤，請稍後再試！");
         } finally {
             joinBtn.innerText = "進入聊天";
             joinBtn.disabled = false;
@@ -188,11 +221,10 @@
     function loginSuccess(name, pass) {
         currentUser = name;
         localStorage.setItem("chat_username", name);
-        localStorage.setItem("chat_password", pass); // 記住密碼，下次不用重打
-        showChatRoom();
+        localStorage.setItem("chat_password", pass);
+        showApp();
     }
 
-    // 登出按鈕：清空帳號和密碼紀錄
     logoutBtn.addEventListener('click', () => {
         if(confirm("確定要登出嗎？")) {
             localStorage.removeItem("chat_username");
@@ -201,20 +233,81 @@
         }
     });
 
-    function showChatRoom() {
+    // 🌟 進入主程式畫面
+    function showApp() {
         loginScreen.style.display = "none";
-        chatContainer.style.display = "flex";
-        userDisplayStatus.innerText = `目前登入：${currentUser}`; 
+        mainContainer.style.display = "flex";
+        myNameDisplay.innerText = currentUser; 
+        
+        loadUsers(); // 載入左側聯絡人
+        loadMessages(); // 載入右側訊息
+    }
+
+    // 🌟 即時讀取有哪些使用者註冊了 (顯示在左邊)
+    function loadUsers() {
+        onSnapshot(usersRef, (snapshot) => {
+            dynamicContacts.innerHTML = ""; // 清空名單重新產生
+            snapshot.forEach((doc) => {
+                const userName = doc.id;
+                // 不要把自己的名字顯示在聯絡人清單裡
+                if (userName !== currentUser) {
+                    const div = document.createElement("div");
+                    div.className = "contact-item";
+                    div.innerHTML = `
+                        <div class="profile-pic">👤</div>
+                        <div class="contact-name">${userName}</div>
+                    `;
+                    
+                    // 點擊聯絡人時，切換聊天室
+                    div.onclick = () => {
+                        // 移除所有人的 active 樣式
+                        document.querySelectorAll('.contact-item').forEach(el => el.classList.remove('active'));
+                        div.classList.add('active'); // 標記目前選取的人
+                        
+                        // 設定房間 ID (為了確保 A點B 跟 B點A 房間一樣，把名字按字母排序組合)
+                        const roomId = [currentUser, userName].sort().join('_');
+                        switchRoom(roomId, userName, "👤", "私密聊天");
+                    };
+                    dynamicContacts.appendChild(div);
+                }
+            });
+        });
+    }
+
+    // 點擊「公開聊天室」按鈕
+    globalChatBtn.onclick = () => {
+        document.querySelectorAll('.contact-item').forEach(el => el.classList.remove('active'));
+        globalChatBtn.classList.add('active');
+        switchRoom("global", "公開聊天室", "👥", "大家都在這裡");
+    };
+
+    // 🌟 切換聊天室的函數
+    function switchRoom(roomId, displayName, icon, status) {
+        currentRoom = roomId;
+        chatHeaderName.innerText = displayName;
+        chatHeaderIcon.innerText = icon;
+        chatHeaderStatus.innerText = status;
+        
+        // 重新載入訊息 (因為 loadMessages 會根據 currentRoom 過濾)
         loadMessages();
     }
 
+    // 讀取並過濾訊息
     function loadMessages() {
         const q = query(messagesRef, orderBy("createdAt", "asc"));
+        
         onSnapshot(q, (snapshot) => {
             chatBox.innerHTML = ''; 
             snapshot.forEach((doc) => {
                 const data = doc.data();
-                displayMessage(data);
+                
+                // 🌟 判斷這則訊息屬於哪個聊天室
+                const msgRoom = data.roomId || "global"; // 以前舊的訊息當作 global
+                
+                // 只有當訊息的房間等於現在選的房間時，才顯示出來
+                if (msgRoom === currentRoom) {
+                    displayMessage(data);
+                }
             });
             chatBox.scrollTop = chatBox.scrollHeight; 
         });
@@ -227,7 +320,8 @@
         msgDiv.className = `message ${isMe ? "me" : ""}`;
         
         let contentHtml = '';
-        if (!isMe && data.user) {
+        // 如果是公開聊天室且不是自己發的，顯示名字。如果是私訊就不用顯示名字了。
+        if (!isMe && data.user && currentRoom === "global") {
             contentHtml += `<div class="sender-name">${data.user}</div>`;
         }
         if (data.text) {
@@ -275,11 +369,13 @@
         }
 
         try {
+            // 🌟 儲存訊息時，同時記錄它屬於哪個房間 (roomId)
             await addDoc(messagesRef, {
                 text: text,
                 imageUrl: imageUrl,
                 createdAt: serverTimestamp(),
-                user: currentUser 
+                user: currentUser,
+                roomId: currentRoom 
             });
 
             msgInput.value = '';
