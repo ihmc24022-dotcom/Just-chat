@@ -55,7 +55,8 @@
         #confirm-add-btn { background: #128c7e; color: white; }
         #cancel-add-btn { background: #ccc; color: #333; }
 
-        #chat-container { flex: 1; display: flex; flex-direction: column; background: #efeae2; }
+        /* 🌟 給 chat-container 加上 position: relative 讓 GIF 彈出視窗可以定位 */
+        #chat-container { flex: 1; display: flex; flex-direction: column; background: #efeae2; position: relative; }
         
         #chat-header {
             background-color: #075e54; color: white; padding: 10px 15px;
@@ -84,6 +85,16 @@
         .icon-btn { cursor: pointer; padding: 10px; margin: 0 5px; background: none; border: none; font-size: 1.2em; }
         #send-btn { background: #128c7e; color: white; border: none; border-radius: 20px; padding: 8px 15px; margin-left: 5px; cursor: pointer; font-size: 14px; }
         #send-btn:disabled { background: #888; cursor: not-allowed; }
+
+        /* 🌟 GIF 彈出視窗樣式 */
+        #gif-modal {
+            display: none; position: absolute; bottom: 65px; right: 20px;
+            background: white; border: 1px solid #ddd; border-radius: 10px;
+            padding: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); width: 240px; z-index: 20;
+        }
+        .gif-grid { display: flex; flex-wrap: wrap; gap: 6px; height: 180px; overflow-y: auto; justify-content: space-between; }
+        .gif-option { width: 48%; height: 80px; cursor: pointer; border-radius: 5px; object-fit: cover; transition: 0.2s; }
+        .gif-option:hover { filter: brightness(0.8); }
     </style>
 </head>
 <body>
@@ -132,11 +143,29 @@
         </div>
 
         <div id="chat-box"></div>
+
+        <div id="gif-modal">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h4 style="margin: 0; font-size: 14px; color: #333;">選擇要發送的 GIF</h4>
+                <span id="close-gif" style="cursor: pointer; font-weight: bold; color: #888;">✕</span>
+            </div>
+            <div class="gif-grid">
+                <img src="https://media.giphy.com/media/3o7TKSjRrfIPjeiVyM/giphy.gif" class="gif-option">
+                <img src="https://media.giphy.com/media/13HgwGsXF0aiGY/giphy.gif" class="gif-option">
+                <img src="https://media.giphy.com/media/l0HlBO7eyXzSZkJri/giphy.gif" class="gif-option">
+                <img src="https://media.giphy.com/media/xT0xezQGU5xCDJuCPe/giphy.gif" class="gif-option">
+                <img src="https://media.giphy.com/media/26ufdipQqU2lhNA4g/giphy.gif" class="gif-option">
+                <img src="https://media.giphy.com/media/JIX9t2j0ZTN9S/giphy.gif" class="gif-option">
+            </div>
+        </div>
         
         <div id="input-area">
             <label for="file-input" class="icon-btn">📎</label>
             <input type="file" id="file-input" accept="image/*">
             <input type="text" id="msg-input" placeholder="輸入訊息...">
+            
+            <button id="gif-btn" class="icon-btn" style="font-weight: 800; font-size: 13px; background: #e0e0e0; border-radius: 8px; padding: 6px 10px; display: flex; align-items: center; justify-content: center;">GIF</button>
+            
             <button id="send-btn">發送</button>
         </div>
     </div>
@@ -199,6 +228,12 @@
     const fileInput = document.getElementById('file-input');
     const sendBtn = document.getElementById('send-btn');
     const logoutBtn = document.getElementById('logout-btn');
+    
+    // 🌟 新增的 GIF DOM
+    const gifBtn = document.getElementById('gif-btn');
+    const gifModal = document.getElementById('gif-modal');
+    const closeGif = document.getElementById('close-gif');
+    const gifOptions = document.querySelectorAll('.gif-option');
 
     const messagesRef = collection(db, "messages");
 
@@ -286,18 +321,9 @@
             const friendSnap = await getDoc(friendRef);
 
             if (friendSnap.exists()) {
-                // 🌟 修復核心：雙向新增好友
                 const myRef = doc(db, "users", currentUser);
-                
-                // 1. 把對方加到我的好友名單
-                await updateDoc(myRef, {
-                    friends: arrayUnion(friendName) 
-                });
-                
-                // 2. 把我加到對方的好友名單（解決對方看不到你的 Bug）
-                await updateDoc(friendRef, {
-                    friends: arrayUnion(currentUser) 
-                });
+                await updateDoc(myRef, { friends: arrayUnion(friendName) });
+                await updateDoc(friendRef, { friends: arrayUnion(currentUser) });
                 
                 alert(`成功將 ${friendName} 加入好友！現在你們可以互相傳訊了。`);
                 addFriendModal.style.display = "none";
@@ -443,6 +469,7 @@
         }
     }
 
+    // 發送文字與本地圖片
     sendBtn.addEventListener('click', async () => {
         const text = msgInput.value.trim();
         const file = fileInput.files[0];
@@ -481,6 +508,39 @@
             event.preventDefault();
             sendBtn.click();
         }
+    });
+
+    // 🌟 處理 GIF 的邏輯
+    gifBtn.addEventListener('click', () => {
+        // 切換顯示/隱藏
+        gifModal.style.display = (gifModal.style.display === "none" || gifModal.style.display === "") ? "block" : "none";
+    });
+
+    closeGif.addEventListener('click', () => {
+        gifModal.style.display = "none";
+    });
+
+    // 當點擊任何一個 GIF 時
+    gifOptions.forEach(img => {
+        img.addEventListener('click', async () => {
+            const gifUrl = img.src; // 取得點擊的圖片連結
+            gifModal.style.display = "none"; // 點擊後馬上關閉視窗
+
+            // 將這張 GIF 當作圖片訊息直接送出！
+            try {
+                await addDoc(messagesRef, {
+                    text: "",
+                    imageUrl: gifUrl,
+                    createdAt: serverTimestamp(),
+                    user: currentUser,
+                    roomId: currentRoom,
+                    status: "sent" 
+                });
+            } catch (error) {
+                console.error("GIF 發送錯誤:", error);
+                alert("GIF 發送失敗");
+            }
+        });
     });
 </script>
 
