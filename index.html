@@ -7,8 +7,45 @@
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #ece5dd; display: flex; justify-content: center; padding: 20px; }
         #chat-container { width: 100%; max-width: 400px; background: white; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); overflow: hidden; display: flex; flex-direction: column; height: 80vh; }
-        #chat-box { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
-        .message { max-width: 70%; padding: 10px 15px; border-radius: 15px; background: #fff; border: 1px solid #ddd; word-wrap: break-word; }
+        
+        /* 🌟 新增的頂部聯絡人名稱欄樣式 */
+        #chat-header {
+            background-color: #075e54; /* 類似 WhatsApp 的深綠色 */
+            color: white;
+            padding: 10px 15px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            z-index: 10;
+        }
+        .profile-pic {
+            font-size: 20px;
+            background: #dfe5e7;
+            color: #555;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .contact-info {
+            display: flex;
+            flex-direction: column;
+        }
+        .contact-name {
+            font-weight: bold;
+            font-size: 16px;
+        }
+        .contact-status {
+            font-size: 12px;
+            color: #d1f2eb;
+            margin-top: 2px;
+        }
+
+        #chat-box { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); /* WhatsApp 背景圖 */ background-size: cover;}
+        .message { max-width: 70%; padding: 10px 15px; border-radius: 15px; background: #fff; border: 1px solid #ddd; word-wrap: break-word; box-shadow: 0 1px 1px rgba(0,0,0,0.05); }
         .message.me { align-self: flex-end; background: #dcf8c6; border: none; }
         .message img { max-width: 100%; border-radius: 10px; margin-top: 5px; }
         .timestamp { font-size: 0.7em; color: #888; text-align: right; margin-top: 5px; }
@@ -23,8 +60,17 @@
 <body>
 
 <div id="chat-container">
+    <div id="chat-header">
+        <div class="profile-pic">👤</div>
+        <div class="contact-info">
+            <div class="contact-name">神秘的好友</div>
+            <div class="contact-status">在線</div>
+        </div>
+    </div>
+
     <div id="chat-box">
         </div>
+    
     <div id="input-area">
         <label for="file-input" class="icon-btn">📎</label>
         <input type="file" id="file-input" accept="image/*">
@@ -53,7 +99,7 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // 4. Cloudinary 設定 (已修正為 ml_default)
+    // 4. Cloudinary 設定
     const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/drwflposq/image/upload";
     const CLOUDINARY_UPLOAD_PRESET = "ml_default";
 
