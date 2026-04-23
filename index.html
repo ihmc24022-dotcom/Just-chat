@@ -29,10 +29,10 @@
         }
         .login-box button:disabled { background: #888; cursor: not-allowed; }
 
-        /* 🌟 主容器 (現在變成左右兩塊了) */
-        #main-container { width: 100%; max-width: 900px; background: white; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); overflow: hidden; display: none; flex-direction: row; height: 90vh; }
+        /* 主容器 */
+        #main-container { width: 100%; max-width: 900px; background: white; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); overflow: hidden; display: none; flex-direction: row; height: 90vh; position: relative;}
         
-        /* 🌟 左側聯絡人欄位 */
+        /* 左側聯絡人欄位 */
         #sidebar { width: 280px; background: #fff; border-right: 1px solid #ddd; display: flex; flex-direction: column; }
         .sidebar-header { background: #f0f2f5; padding: 10px 15px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #ddd; height: 40px; }
         .sidebar-header .contact-name { font-weight: bold; color: #333; }
@@ -42,6 +42,42 @@
         .contact-item:hover { background: #f5f6f6; }
         .contact-item.active { background: #ebebeb; }
         .contact-item .contact-name { font-weight: 500; font-size: 15px; color: #000; }
+
+        /* 🌟 新增朋友按鈕區域 */
+        #add-friend-area {
+            padding: 15px;
+            background: #f0f2f5;
+            border-top: 1px solid #ddd;
+            display: flex;
+            justify-content: center;
+        }
+        #add-friend-btn {
+            background: #075e54;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            width: 100%;
+            transition: 0.2s;
+        }
+        #add-friend-btn:hover { background: #128c7e; }
+
+        /* 🌟 新增朋友的對話框 (彈出視窗) */
+        #add-friend-modal {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 50;
+        }
+        .modal-content {
+            background: white; padding: 20px; border-radius: 8px; width: 250px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+        .modal-content input { width: 90%; padding: 8px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px; outline:none; }
+        .modal-btns { display: flex; justify-content: space-between; margin-top: 10px; }
+        .modal-btns button { padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        #confirm-add-btn { background: #128c7e; color: white; }
+        #cancel-add-btn { background: #ccc; color: #333; }
 
         /* 右側聊天區域 */
         #chat-container { flex: 1; display: flex; flex-direction: column; background: #efeae2; }
@@ -100,9 +136,13 @@
         <div id="contact-list">
             <div class="contact-item active" id="global-chat-btn">
                 <div class="profile-pic">👥</div>
-                <div class="contact-name">公開聊天室 (所有人)</div>
+                <div class="contact-name">公開聊天室</div>
             </div>
-            <div id="dynamic-contacts"></div>
+            <div id="friend-list-container"></div>
+        </div>
+
+        <div id="add-friend-area">
+            <button id="add-friend-btn">➕ 新增朋友！</button>
         </div>
     </div>
 
@@ -117,8 +157,7 @@
             </div>
         </div>
 
-        <div id="chat-box">
-            </div>
+        <div id="chat-box"></div>
         
         <div id="input-area">
             <label for="file-input" class="icon-btn">📎</label>
@@ -127,11 +166,25 @@
             <button id="send-btn">發送</button>
         </div>
     </div>
+
+    <div id="add-friend-modal">
+        <div class="modal-content">
+            <h3>新增朋友</h3>
+            <p style="font-size: 12px; color: #666; margin-top: -10px;">請輸入對方註冊的帳號名稱</p>
+            <input type="text" id="new-friend-input" placeholder="朋友的帳號...">
+            <div class="modal-btns">
+                <button id="cancel-add-btn">取消</button>
+                <button id="confirm-add-btn">新增</button>
+            </div>
+        </div>
+    </div>
+
 </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
-    import { getFirestore, collection, addDoc, serverTimestamp, onSnapshot, query, orderBy, doc, getDoc, setDoc } 
+    // 🌟 引入 updateDoc 和 arrayUnion 用來更新好友名單
+    import { getFirestore, collection, addDoc, serverTimestamp, onSnapshot, query, orderBy, doc, getDoc, setDoc, updateDoc, arrayUnion } 
         from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -145,13 +198,13 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
-
     const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/drwflposq/image/upload";
     const CLOUDINARY_UPLOAD_PRESET = "ml_default";
 
     let currentUser = "";
-    let currentRoom = "global"; // 🌟 新增：用來記錄現在在哪個聊天室 (預設為公開)
+    let currentRoom = "global"; 
 
+    // DOM Elements
     const loginScreen = document.getElementById('login-screen');
     const mainContainer = document.getElementById('main-container');
     const joinBtn = document.getElementById('join-btn');
@@ -159,9 +212,15 @@
     const passwordInput = document.getElementById('password-input');
     
     const myNameDisplay = document.getElementById('my-name-display');
-    const dynamicContacts = document.getElementById('dynamic-contacts');
+    const friendListContainer = document.getElementById('friend-list-container');
     const globalChatBtn = document.getElementById('global-chat-btn');
     
+    const addFriendBtn = document.getElementById('add-friend-btn');
+    const addFriendModal = document.getElementById('add-friend-modal');
+    const cancelAddBtn = document.getElementById('cancel-add-btn');
+    const confirmAddBtn = document.getElementById('confirm-add-btn');
+    const newFriendInput = document.getElementById('new-friend-input');
+
     const chatHeaderName = document.getElementById('chat-header-name');
     const chatHeaderIcon = document.getElementById('chat-header-icon');
     const chatHeaderStatus = document.getElementById('chat-header-status');
@@ -172,12 +231,10 @@
     const logoutBtn = document.getElementById('logout-btn');
 
     const messagesRef = collection(db, "messages");
-    const usersRef = collection(db, "users");
 
-    // 檢查瀏覽器記憶
+    // 檢查登入狀態
     const savedUser = localStorage.getItem("chat_username");
     const savedPass = localStorage.getItem("chat_password");
-    
     if (savedUser && savedPass) {
         currentUser = savedUser;
         showApp();
@@ -185,11 +242,9 @@
         loginScreen.style.display = "flex";
     }
 
-    // 登入邏輯
     joinBtn.addEventListener('click', async () => {
         const name = usernameInput.value.trim();
         const pass = passwordInput.value.trim();
-        
         if (!name || !pass) return alert("請輸入帳號和密碼！");
 
         joinBtn.innerText = "驗證中...";
@@ -206,7 +261,8 @@
                     alert("密碼錯誤！這個名字已經被註冊了。");
                 }
             } else {
-                await setDoc(userRef, { password: pass, createdAt: serverTimestamp() });
+                // 註冊時，預設 friends 是一個空陣列
+                await setDoc(userRef, { password: pass, friends: [], createdAt: serverTimestamp() });
                 loginSuccess(name, pass);
             }
         } catch (error) {
@@ -233,78 +289,116 @@
         }
     });
 
-    // 🌟 進入主程式畫面
     function showApp() {
         loginScreen.style.display = "none";
         mainContainer.style.display = "flex";
         myNameDisplay.innerText = currentUser; 
         
-        loadUsers(); // 載入左側聯絡人
-        loadMessages(); // 載入右側訊息
+        loadFriends(); // 🌟 改為載入「好友名單」而不是所有人
+        loadMessages(); 
     }
 
-    // 🌟 即時讀取有哪些使用者註冊了 (顯示在左邊)
-    function loadUsers() {
-        onSnapshot(usersRef, (snapshot) => {
-            dynamicContacts.innerHTML = ""; // 清空名單重新產生
-            snapshot.forEach((doc) => {
-                const userName = doc.id;
-                // 不要把自己的名字顯示在聯絡人清單裡
-                if (userName !== currentUser) {
+    // 🌟 彈出/關閉新增朋友視窗
+    addFriendBtn.onclick = () => {
+        addFriendModal.style.display = "flex";
+        newFriendInput.value = "";
+        newFriendInput.focus();
+    };
+    cancelAddBtn.onclick = () => addFriendModal.style.display = "none";
+
+    // 🌟 執行新增朋友邏輯
+    confirmAddBtn.onclick = async () => {
+        const friendName = newFriendInput.value.trim();
+        
+        if (!friendName) return;
+        if (friendName === currentUser) return alert("不能加自己為好友啦！");
+
+        confirmAddBtn.innerText = "尋找中...";
+        confirmAddBtn.disabled = true;
+
+        try {
+            // 檢查這個人存不存在
+            const friendRef = doc(db, "users", friendName);
+            const friendSnap = await getDoc(friendRef);
+
+            if (friendSnap.exists()) {
+                // 如果存在，把這個人加到「我的好友名單」陣列中
+                const myRef = doc(db, "users", currentUser);
+                await updateDoc(myRef, {
+                    friends: arrayUnion(friendName) // arrayUnion 會確保不重複加入
+                });
+                
+                alert(`成功將 ${friendName} 加入好友！`);
+                addFriendModal.style.display = "none";
+            } else {
+                alert(`找不到帳號「${friendName}」，請確認名稱是否正確。`);
+            }
+        } catch (error) {
+            console.error("加好友錯誤:", error);
+            alert("發生錯誤，請稍後再試。");
+        } finally {
+            confirmAddBtn.innerText = "新增";
+            confirmAddBtn.disabled = false;
+        }
+    };
+
+    // 🌟 讀取我的好友名單並顯示
+    function loadFriends() {
+        const myRef = doc(db, "users", currentUser);
+        
+        // 監聽自己的使用者文件，當好友名單改變時即時更新畫面
+        onSnapshot(myRef, (docSnap) => {
+            friendListContainer.innerHTML = ""; 
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                const friends = data.friends || []; // 如果還沒有 friends 屬性就給空陣列
+                
+                friends.forEach((friendName) => {
                     const div = document.createElement("div");
                     div.className = "contact-item";
+                    // 點擊事件：如果目前的房間(currentRoom)已經包含這個朋友的名字，就加上 active class
+                    const roomId = [currentUser, friendName].sort().join('_');
+                    if (currentRoom === roomId) {
+                         div.classList.add('active');
+                    }
+
                     div.innerHTML = `
                         <div class="profile-pic">👤</div>
-                        <div class="contact-name">${userName}</div>
+                        <div class="contact-name">${friendName}</div>
                     `;
                     
-                    // 點擊聯絡人時，切換聊天室
                     div.onclick = () => {
-                        // 移除所有人的 active 樣式
                         document.querySelectorAll('.contact-item').forEach(el => el.classList.remove('active'));
-                        div.classList.add('active'); // 標記目前選取的人
-                        
-                        // 設定房間 ID (為了確保 A點B 跟 B點A 房間一樣，把名字按字母排序組合)
-                        const roomId = [currentUser, userName].sort().join('_');
-                        switchRoom(roomId, userName, "👤", "私密聊天");
+                        div.classList.add('active'); 
+                        switchRoom(roomId, friendName, "👤", "私密聊天");
                     };
-                    dynamicContacts.appendChild(div);
-                }
-            });
+                    friendListContainer.appendChild(div);
+                });
+            }
         });
     }
 
-    // 點擊「公開聊天室」按鈕
     globalChatBtn.onclick = () => {
         document.querySelectorAll('.contact-item').forEach(el => el.classList.remove('active'));
         globalChatBtn.classList.add('active');
         switchRoom("global", "公開聊天室", "👥", "大家都在這裡");
     };
 
-    // 🌟 切換聊天室的函數
     function switchRoom(roomId, displayName, icon, status) {
         currentRoom = roomId;
         chatHeaderName.innerText = displayName;
         chatHeaderIcon.innerText = icon;
         chatHeaderStatus.innerText = status;
-        
-        // 重新載入訊息 (因為 loadMessages 會根據 currentRoom 過濾)
         loadMessages();
     }
 
-    // 讀取並過濾訊息
     function loadMessages() {
         const q = query(messagesRef, orderBy("createdAt", "asc"));
-        
         onSnapshot(q, (snapshot) => {
             chatBox.innerHTML = ''; 
             snapshot.forEach((doc) => {
                 const data = doc.data();
-                
-                // 🌟 判斷這則訊息屬於哪個聊天室
-                const msgRoom = data.roomId || "global"; // 以前舊的訊息當作 global
-                
-                // 只有當訊息的房間等於現在選的房間時，才顯示出來
+                const msgRoom = data.roomId || "global"; 
                 if (msgRoom === currentRoom) {
                     displayMessage(data);
                 }
@@ -316,11 +410,9 @@
     function displayMessage(data) {
         const msgDiv = document.createElement('div');
         const isMe = data.user === currentUser; 
-        
         msgDiv.className = `message ${isMe ? "me" : ""}`;
         
         let contentHtml = '';
-        // 如果是公開聊天室且不是自己發的，顯示名字。如果是私訊就不用顯示名字了。
         if (!isMe && data.user && currentRoom === "global") {
             contentHtml += `<div class="sender-name">${data.user}</div>`;
         }
@@ -342,7 +434,6 @@
         const formData = new FormData();
         formData.append("file", file);
         formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
-
         try {
             const response = await fetch(CLOUDINARY_URL, { method: "POST", body: formData });
             const data = await response.json();
@@ -357,7 +448,6 @@
     sendBtn.addEventListener('click', async () => {
         const text = msgInput.value.trim();
         const file = fileInput.files[0];
-
         if (!text && !file) return;
 
         sendBtn.innerText = "發送中...";
@@ -369,7 +459,6 @@
         }
 
         try {
-            // 🌟 儲存訊息時，同時記錄它屬於哪個房間 (roomId)
             await addDoc(messagesRef, {
                 text: text,
                 imageUrl: imageUrl,
@@ -377,7 +466,6 @@
                 user: currentUser,
                 roomId: currentRoom 
             });
-
             msgInput.value = '';
             fileInput.value = '';
         } catch (error) {
