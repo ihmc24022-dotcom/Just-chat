@@ -43,7 +43,7 @@
         .contact-item.active { background: #ebebeb; }
         .contact-item .contact-name { font-weight: 500; font-size: 15px; color: #000; }
 
-        /* 🌟 新增朋友按鈕區域 */
+        /* 新增朋友按鈕區域 */
         #add-friend-area {
             padding: 15px;
             background: #f0f2f5;
@@ -65,7 +65,7 @@
         }
         #add-friend-btn:hover { background: #128c7e; }
 
-        /* 🌟 新增朋友的對話框 (彈出視窗) */
+        /* 新增朋友的對話框 (彈出視窗) */
         #add-friend-modal {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 50;
@@ -183,7 +183,6 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
-    // 🌟 引入 updateDoc 和 arrayUnion 用來更新好友名單
     import { getFirestore, collection, addDoc, serverTimestamp, onSnapshot, query, orderBy, doc, getDoc, setDoc, updateDoc, arrayUnion } 
         from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
 
@@ -261,7 +260,6 @@
                     alert("密碼錯誤！這個名字已經被註冊了。");
                 }
             } else {
-                // 註冊時，預設 friends 是一個空陣列
                 await setDoc(userRef, { password: pass, friends: [], createdAt: serverTimestamp() });
                 loginSuccess(name, pass);
             }
@@ -294,11 +292,10 @@
         mainContainer.style.display = "flex";
         myNameDisplay.innerText = currentUser; 
         
-        loadFriends(); // 🌟 改為載入「好友名單」而不是所有人
+        loadFriends(); 
         loadMessages(); 
     }
 
-    // 🌟 彈出/關閉新增朋友視窗
     addFriendBtn.onclick = () => {
         addFriendModal.style.display = "flex";
         newFriendInput.value = "";
@@ -306,7 +303,6 @@
     };
     cancelAddBtn.onclick = () => addFriendModal.style.display = "none";
 
-    // 🌟 執行新增朋友邏輯
     confirmAddBtn.onclick = async () => {
         const friendName = newFriendInput.value.trim();
         
@@ -317,15 +313,13 @@
         confirmAddBtn.disabled = true;
 
         try {
-            // 檢查這個人存不存在
             const friendRef = doc(db, "users", friendName);
             const friendSnap = await getDoc(friendRef);
 
             if (friendSnap.exists()) {
-                // 如果存在，把這個人加到「我的好友名單」陣列中
                 const myRef = doc(db, "users", currentUser);
                 await updateDoc(myRef, {
-                    friends: arrayUnion(friendName) // arrayUnion 會確保不重複加入
+                    friends: arrayUnion(friendName) 
                 });
                 
                 alert(`成功將 ${friendName} 加入好友！`);
@@ -342,21 +336,18 @@
         }
     };
 
-    // 🌟 讀取我的好友名單並顯示
     function loadFriends() {
         const myRef = doc(db, "users", currentUser);
         
-        // 監聽自己的使用者文件，當好友名單改變時即時更新畫面
         onSnapshot(myRef, (docSnap) => {
             friendListContainer.innerHTML = ""; 
             if (docSnap.exists()) {
                 const data = docSnap.data();
-                const friends = data.friends || []; // 如果還沒有 friends 屬性就給空陣列
+                const friends = data.friends || []; 
                 
                 friends.forEach((friendName) => {
                     const div = document.createElement("div");
                     div.className = "contact-item";
-                    // 點擊事件：如果目前的房間(currentRoom)已經包含這個朋友的名字，就加上 active class
                     const roomId = [currentUser, friendName].sort().join('_');
                     if (currentRoom === roomId) {
                          div.classList.add('active');
@@ -407,6 +398,7 @@
         });
     }
 
+    // 🌟 這裡更新了時間處理邏輯
     function displayMessage(data) {
         const msgDiv = document.createElement('div');
         const isMe = data.user === currentUser; 
@@ -423,9 +415,18 @@
             contentHtml += `<img src="${data.imageUrl}" alt="上傳的圖片">`;
         }
         
+        // 抓取 Firebase 伺服器時間，轉換成 hh:mm 格式
+        let timeString = "剛剛";
+        if (data.createdAt) {
+            const date = data.createdAt.toDate(); // 將 Firestore 時間物件轉換為 JS 日期
+            const hours = date.getHours().toString().padStart(2, '0'); // 補零，例如 9 變成 09
+            const minutes = date.getMinutes().toString().padStart(2, '0');
+            timeString = `${hours}:${minutes}`;
+        }
+        
         msgDiv.innerHTML = `
             ${contentHtml}
-            <div class="timestamp">剛剛</div>
+            <div class="timestamp">${timeString}</div>
         `;
         chatBox.appendChild(msgDiv);
     }
