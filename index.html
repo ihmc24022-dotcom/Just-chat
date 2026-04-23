@@ -40,11 +40,17 @@
         .contact-item.active { background: #ebebeb; }
         .contact-item .contact-name { font-weight: 500; font-size: 15px; color: #000; }
 
-        #add-friend-area { padding: 15px; background: #f0f2f5; border-top: 1px solid #ddd; display: flex; justify-content: center; }
+        /* 🌟 修改了按鈕區域，讓它可以垂直排列並增加間距 */
+        #add-friend-area { padding: 15px; background: #f0f2f5; border-top: 1px solid #ddd; display: flex; flex-direction: column; gap: 10px; justify-content: center; }
+        
         #add-friend-btn { background: #075e54; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; font-size: 14px; font-weight: bold; width: 100%; transition: 0.2s; }
         #add-friend-btn:hover { background: #128c7e; }
 
-        #add-friend-modal {
+        /* 🌟 新增的建立群組按鈕樣式 */
+        #create-group-btn { background: #e5a935; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; font-size: 14px; font-weight: bold; width: 100%; transition: 0.2s; }
+        #create-group-btn:hover { background: #fbc02d; }
+
+        .modal-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 50;
         }
@@ -52,8 +58,13 @@
         .modal-content input { width: 90%; padding: 8px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px; outline:none; }
         .modal-btns { display: flex; justify-content: space-between; margin-top: 10px; }
         .modal-btns button { padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        
         #confirm-add-btn { background: #128c7e; color: white; }
         #cancel-add-btn { background: #ccc; color: #333; }
+        
+        /* 群組彈出視窗按鈕顏色 */
+        #confirm-group-btn { background: #e5a935; color: white; }
+        #cancel-group-btn { background: #ccc; color: #333; }
 
         #chat-container { flex: 1; display: flex; flex-direction: column; background: #efeae2; position: relative; }
         
@@ -91,7 +102,6 @@
             background: white; border: 1px solid #ddd; border-radius: 10px;
             padding: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); width: 280px; z-index: 20;
         }
-        /* 🌟 搜尋欄樣式 */
         #gif-search-input {
             width: 100%; padding: 8px 12px; margin-bottom: 10px; border: 1px solid #ccc;
             border-radius: 20px; box-sizing: border-box; outline: none; font-size: 13px;
@@ -131,6 +141,7 @@
         </div>
 
         <div id="add-friend-area">
+            <button id="create-group-btn">👥 建立群組</button>
             <button id="add-friend-btn">➕ 新增朋友！</button>
         </div>
     </div>
@@ -153,25 +164,20 @@
                 <h4 style="margin: 0; font-size: 14px; color: #333;">發送 GIF</h4>
                 <span id="close-gif" style="cursor: pointer; font-weight: bold; color: #888;">✕</span>
             </div>
-            
             <input type="text" id="gif-search-input" placeholder="搜尋 GIF... (按 Enter 搜尋)">
-            
-            <div class="gif-grid" id="gif-results-container">
-                </div>
+            <div class="gif-grid" id="gif-results-container"></div>
         </div>
         
         <div id="input-area">
             <label for="file-input" class="icon-btn">📎</label>
             <input type="file" id="file-input" accept="image/*">
             <input type="text" id="msg-input" placeholder="輸入訊息...">
-            
             <button id="gif-btn" class="icon-btn" style="font-weight: 800; font-size: 13px; background: #e0e0e0; border-radius: 8px; padding: 6px 10px; display: flex; align-items: center; justify-content: center;">GIF</button>
-            
             <button id="send-btn">發送</button>
         </div>
     </div>
 
-    <div id="add-friend-modal">
+    <div id="add-friend-modal" class="modal-overlay">
         <div class="modal-content">
             <h3>新增朋友</h3>
             <p style="font-size: 12px; color: #666; margin-top: -10px;">請輸入對方註冊的帳號名稱</p>
@@ -179,6 +185,19 @@
             <div class="modal-btns">
                 <button id="cancel-add-btn">取消</button>
                 <button id="confirm-add-btn">新增</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="create-group-modal" class="modal-overlay">
+        <div class="modal-content" style="width: 280px;">
+            <h3>建立群組</h3>
+            <input type="text" id="new-group-name" placeholder="輸入群組名稱...">
+            <p style="font-size: 12px; color: #666; margin-bottom: 5px; text-align: left;">邀請朋友 (以英文逗號分隔，例如: a,b,c)</p>
+            <input type="text" id="new-group-members" placeholder="輸入朋友的帳號名稱...">
+            <div class="modal-btns">
+                <button id="cancel-group-btn">取消</button>
+                <button id="confirm-group-btn">建立</button>
             </div>
         </div>
     </div>
@@ -202,8 +221,6 @@
     const db = getFirestore(app);
     const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/drwflposq/image/upload";
     const CLOUDINARY_UPLOAD_PRESET = "ml_default";
-
-    // 🌟 公開的 Tenor GIF API Key (適用於開發測試)
     const TENOR_API_KEY = "LIVDSRZULELA"; 
 
     let currentUser = "";
@@ -219,11 +236,23 @@
     const myNameDisplay = document.getElementById('my-name-display');
     const friendListContainer = document.getElementById('friend-list-container');
     const globalChatBtn = document.getElementById('global-chat-btn');
+    
+    // 加好友 DOM
     const addFriendBtn = document.getElementById('add-friend-btn');
     const addFriendModal = document.getElementById('add-friend-modal');
     const cancelAddBtn = document.getElementById('cancel-add-btn');
     const confirmAddBtn = document.getElementById('confirm-add-btn');
     const newFriendInput = document.getElementById('new-friend-input');
+
+    // 🌟 群組 DOM
+    const createGroupBtn = document.getElementById('create-group-btn');
+    const createGroupModal = document.getElementById('create-group-modal');
+    const cancelGroupBtn = document.getElementById('cancel-group-btn');
+    const confirmGroupBtn = document.getElementById('confirm-group-btn');
+    const newGroupName = document.getElementById('new-group-name');
+    const newGroupMembers = document.getElementById('new-group-members');
+
+    // 聊天室 DOM
     const chatHeaderName = document.getElementById('chat-header-name');
     const chatHeaderIcon = document.getElementById('chat-header-icon');
     const chatHeaderStatus = document.getElementById('chat-header-status');
@@ -233,11 +262,10 @@
     const sendBtn = document.getElementById('send-btn');
     const logoutBtn = document.getElementById('logout-btn');
     
+    // GIF DOM
     const gifBtn = document.getElementById('gif-btn');
     const gifModal = document.getElementById('gif-modal');
     const closeGif = document.getElementById('close-gif');
-    
-    // 🌟 GIF 搜尋相關 DOM
     const gifSearchInput = document.getElementById('gif-search-input');
     const gifResultsContainer = document.getElementById('gif-results-container');
 
@@ -271,7 +299,7 @@
                     alert("密碼錯誤！這個名字已經被註冊了。");
                 }
             } else {
-                await setDoc(userRef, { password: pass, friends: [], createdAt: serverTimestamp() });
+                await setDoc(userRef, { password: pass, friends: [], groups: [], createdAt: serverTimestamp() });
                 loginSuccess(name, pass);
             }
         } catch (error) {
@@ -303,10 +331,11 @@
         mainContainer.style.display = "flex";
         myNameDisplay.innerText = currentUser; 
         
-        loadFriends(); 
+        loadFriendsAndGroups(); 
         loadMessages(); 
     }
 
+    // --- 加好友邏輯 ---
     addFriendBtn.onclick = () => {
         addFriendModal.style.display = "flex";
         newFriendInput.value = "";
@@ -345,21 +374,89 @@
         }
     };
 
-    function loadFriends() {
+    // --- 🌟 建立群組邏輯 ---
+    createGroupBtn.onclick = () => {
+        createGroupModal.style.display = "flex";
+        newGroupName.value = "";
+        newGroupMembers.value = "";
+        newGroupName.focus();
+    };
+    cancelGroupBtn.onclick = () => createGroupModal.style.display = "none";
+
+    confirmGroupBtn.onclick = async () => {
+        const groupName = newGroupName.value.trim();
+        const membersStr = newGroupMembers.value.trim();
+        
+        if (!groupName) return alert("請輸入群組名稱！");
+        
+        confirmGroupBtn.innerText = "建立中...";
+        confirmGroupBtn.disabled = true;
+
+        try {
+            // 解析輸入的好友帳號，確保名字乾淨且有加入自己
+            let members = membersStr.split(',').map(m => m.trim()).filter(m => m);
+            if (!members.includes(currentUser)) {
+                members.push(currentUser); 
+            }
+
+            // 產生一個專屬的群組 ID
+            const groupId = "group_" + Date.now();
+            const groupData = { id: groupId, name: groupName };
+
+            // 將這個群組資料一次派發給所有輸入的成員資料庫中
+            for (const member of members) {
+                const memberRef = doc(db, "users", member);
+                const memberSnap = await getDoc(memberRef);
+                if (memberSnap.exists()) {
+                    await updateDoc(memberRef, {
+                        groups: arrayUnion(groupData)
+                    });
+                }
+            }
+
+            alert(`成功建立群組「${groupName}」！`);
+            createGroupModal.style.display = "none";
+        } catch (error) {
+            console.error("建立群組錯誤:", error);
+            alert("發生錯誤，可能是找不到您輸入的某些朋友帳號。");
+        } finally {
+            confirmGroupBtn.innerText = "建立";
+            confirmGroupBtn.disabled = false;
+        }
+    };
+
+    // --- 載入清單 (朋友 + 群組) ---
+    function loadFriendsAndGroups() {
         const myRef = doc(db, "users", currentUser);
         onSnapshot(myRef, (docSnap) => {
             friendListContainer.innerHTML = ""; 
             if (docSnap.exists()) {
                 const data = docSnap.data();
-                const friends = data.friends || []; 
                 
+                // 1. 渲染群組 (放在前面)
+                const groups = data.groups || [];
+                groups.forEach((group) => {
+                    const div = document.createElement("div");
+                    div.className = "contact-item";
+                    if (currentRoom === group.id) div.classList.add('active');
+
+                    div.innerHTML = `<div class="profile-pic" style="background:#e5a935; color:white; font-size: 16px;">👥</div><div class="contact-name">${group.name}</div>`;
+                    
+                    div.onclick = () => {
+                        document.querySelectorAll('.contact-item').forEach(el => el.classList.remove('active'));
+                        div.classList.add('active'); 
+                        switchRoom(group.id, group.name, "👥", "群組聊天");
+                    };
+                    friendListContainer.appendChild(div);
+                });
+
+                // 2. 渲染個人好友
+                const friends = data.friends || []; 
                 friends.forEach((friendName) => {
                     const div = document.createElement("div");
                     div.className = "contact-item";
                     const roomId = [currentUser, friendName].sort().join('_');
-                    if (currentRoom === roomId) {
-                         div.classList.add('active');
-                    }
+                    if (currentRoom === roomId) div.classList.add('active');
 
                     div.innerHTML = `<div class="profile-pic">👤</div><div class="contact-name">${friendName}</div>`;
                     
@@ -403,9 +500,8 @@
                     displayMessage(data);
                 }
 
-                if (msgRoom !== "global" && data.user !== currentUser && msgRoom.includes(currentUser)) {
+                if (msgRoom !== "global" && !msgRoom.startsWith("group_") && data.user !== currentUser && msgRoom.includes(currentUser)) {
                     const docRef = doc(db, "messages", docSnap.id);
-
                     if (currentRoom === msgRoom && data.status !== "read") {
                         updateDoc(docRef, { status: "read" });
                     }
@@ -424,14 +520,15 @@
         msgDiv.className = `message ${isMe ? "me" : ""}`;
         
         let contentHtml = '';
-        if (!isMe && data.user && currentRoom === "global") {
+        // 🌟 如果是公開聊天室或群組（group_開頭），顯示發送者的名字
+        if (!isMe && data.user && (currentRoom === "global" || currentRoom.startsWith("group_"))) {
             contentHtml += `<div class="sender-name">${data.user}</div>`;
         }
         if (data.text) {
             contentHtml += `<div>${data.text}</div>`;
         }
         if (data.imageUrl) {
-            contentHtml += `<img src="${data.imageUrl}" alt="上傳的圖片">`;
+            contentHtml += `<img src="${data.imageUrl}" alt="圖片">`;
         }
         
         let timeString = "剛剛";
@@ -443,7 +540,7 @@
         }
 
         let ticksHtml = '';
-        if (isMe && currentRoom !== "global") {
+        if (isMe && currentRoom !== "global" && !currentRoom.startsWith("group_")) {
             if (data.status === "read") {
                 ticksHtml = `<span style="color: #53bdeb; font-weight: bold; margin-left: 4px; font-size: 13px;">✓✓</span>`;
             } else if (data.status === "delivered") {
@@ -515,29 +612,25 @@
         }
     });
 
-    // 🌟 動態載入 GIF 的功能
+    // --- GIF 搜尋與發送邏輯 ---
     async function fetchGifs(queryStr = "hello") {
         gifResultsContainer.innerHTML = '<p style="text-align:center; width:100%; color:#888; font-size:12px; margin-top:20px;">搜尋中...</p>';
         try {
-            // 呼叫 Tenor API
             const response = await fetch(`https://g.tenor.com/v1/search?q=${queryStr}&key=${TENOR_API_KEY}&limit=12`);
             const data = await response.json();
             
-            gifResultsContainer.innerHTML = ''; // 清空載入文字
+            gifResultsContainer.innerHTML = ''; 
             
             data.results.forEach(item => {
                 const img = document.createElement('img');
-                // 使用 tinygif 節省預覽時的流量與載入時間
                 img.src = item.media[0].tinygif.url; 
                 img.className = 'gif-option';
                 
-                // 點擊圖片發送
                 img.onclick = async () => {
                     gifModal.style.display = "none";
                     try {
                         await addDoc(messagesRef, {
                             text: "",
-                            // 發送時使用高品質的 GIF 網址
                             imageUrl: item.media[0].gif.url,
                             createdAt: serverTimestamp(),
                             user: currentUser,
@@ -549,7 +642,6 @@
                         alert("GIF 發送失敗");
                     }
                 };
-                
                 gifResultsContainer.appendChild(img);
             });
         } catch (error) {
@@ -558,11 +650,9 @@
         }
     }
 
-    // 打開 GIF 視窗時
     gifBtn.addEventListener('click', () => {
         if (gifModal.style.display === "none" || gifModal.style.display === "") {
             gifModal.style.display = "block";
-            // 預設載入一些隨機熱門圖（例如 "trending" 或 "cute"）
             fetchGifs("trending"); 
         } else {
             gifModal.style.display = "none";
@@ -573,7 +663,6 @@
         gifModal.style.display = "none";
     });
 
-    // 🌟 在搜尋欄按下 Enter 鍵時觸發搜尋
     gifSearchInput.addEventListener("keypress", function(event) {
         if (event.key === "Enter") {
             event.preventDefault();
