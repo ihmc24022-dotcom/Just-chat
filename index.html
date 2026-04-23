@@ -1,22 +1,23 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My GitHub Chat App</title>
+    <title>我的 GitHub 聊天平台</title>
     <style>
-        body { font-family: Arial, sans-serif; background-color: #ece5dd; display: flex; justify-content: center; padding: 20px; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #ece5dd; display: flex; justify-content: center; padding: 20px; }
         #chat-container { width: 100%; max-width: 400px; background: white; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); overflow: hidden; display: flex; flex-direction: column; height: 80vh; }
         #chat-box { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
-        .message { max-width: 70%; padding: 10px 15px; border-radius: 15px; background: #fff; border: 1px solid #ddd; }
+        .message { max-width: 70%; padding: 10px 15px; border-radius: 15px; background: #fff; border: 1px solid #ddd; word-wrap: break-word; }
         .message.me { align-self: flex-end; background: #dcf8c6; border: none; }
         .message img { max-width: 100%; border-radius: 10px; margin-top: 5px; }
         .timestamp { font-size: 0.7em; color: #888; text-align: right; margin-top: 5px; }
-        #input-area { display: flex; padding: 10px; background: #f0f0f0; border-top: 1px solid #ddd; }
-        #msg-input { flex: 1; padding: 10px; border-radius: 20px; border: 1px solid #ddd; outline: none; }
+        #input-area { display: flex; padding: 10px; background: #f0f0f0; border-top: 1px solid #ddd; align-items: center; }
+        #msg-input { flex: 1; padding: 10px; border-radius: 20px; border: 1px solid #ddd; outline: none; font-size: 14px; }
         #file-input { display: none; }
         .icon-btn { cursor: pointer; padding: 10px; margin: 0 5px; background: none; border: none; font-size: 1.2em; }
-        #send-btn { background: #128c7e; color: white; border: none; border-radius: 20px; padding: 0 20px; margin-left: 5px; cursor: pointer; }
+        #send-btn { background: #128c7e; color: white; border: none; border-radius: 20px; padding: 8px 15px; margin-left: 5px; cursor: pointer; font-size: 14px; }
+        #send-btn:disabled { background: #888; cursor: not-allowed; }
     </style>
 </head>
 <body>
@@ -27,18 +28,18 @@
     <div id="input-area">
         <label for="file-input" class="icon-btn">📎</label>
         <input type="file" id="file-input" accept="image/*">
-        <input type="text" id="msg-input" placeholder="Type a message...">
-        <button id="send-btn">Send</button>
+        <input type="text" id="msg-input" placeholder="輸入訊息...">
+        <button id="send-btn">發送</button>
     </div>
 </div>
 
 <script type="module">
-    // 1. Import Firebase from CDNs
+    // 1. 從 CDN 引入 Firebase
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
     import { getFirestore, collection, addDoc, serverTimestamp, onSnapshot, query, orderBy } 
         from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
 
-    // 2. Your Firebase Configuration
+    // 2. 你的 Firebase 設定檔
     const firebaseConfig = {
         apiKey: "AIzaSyDY9uX6jJW0HMOGQgoel1hR-3ReLlQjw-A",
         authDomain: "chat-54795.firebaseapp.com",
@@ -48,34 +49,34 @@
         appId: "1:915552330387:web:c38152f34d3aa7abe62366"
     };
 
-    // 3. Initialize Firebase & Firestore
+    // 3. 初始化 Firebase 與 Firestore
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // 4. Cloudinary Configuration (REPLACE THE PRESET NAME)
+    // 4. Cloudinary 設定 (已填入你的資料)
     const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/drwflposq/image/upload";
-    const CLOUDINARY_UPLOAD_PRESET = "YOUR_UNSIGNED_PRESET_NAME"; // <--- PASTE YOUR PRESET HERE!
+    const CLOUDINARY_UPLOAD_PRESET = "501ed6d1-e914-4c1d-b3e7-070f973b89e1";
 
-    // 5. DOM Elements
+    // 5. 獲取網頁上的 DOM 元素
     const chatBox = document.getElementById('chat-box');
     const msgInput = document.getElementById('msg-input');
     const fileInput = document.getElementById('file-input');
     const sendBtn = document.getElementById('send-btn');
 
-    // 6. Listen for incoming messages in real-time
+    // 6. 即時監聽資料庫中的新訊息
     const messagesRef = collection(db, "messages");
     const q = query(messagesRef, orderBy("createdAt", "asc"));
 
     onSnapshot(q, (snapshot) => {
-        chatBox.innerHTML = ''; // Clear chat box
+        chatBox.innerHTML = ''; // 清空聊天視窗
         snapshot.forEach((doc) => {
             const data = doc.data();
             displayMessage(data);
         });
-        chatBox.scrollTop = chatBox.scrollHeight; // Scroll to bottom
+        chatBox.scrollTop = chatBox.scrollHeight; // 自動捲動到最底部
     });
 
-    // 7. Function to render messages on screen
+    // 7. 在畫面上顯示訊息的函數
     function displayMessage(data) {
         const msgDiv = document.createElement('div');
         msgDiv.className = `message ${data.user === "Me" ? "me" : ""}`;
@@ -85,17 +86,17 @@
             contentHtml += `<div>${data.text}</div>`;
         }
         if (data.imageUrl) {
-            contentHtml += `<img src="${data.imageUrl}" alt="Uploaded Image">`;
+            contentHtml += `<img src="${data.imageUrl}" alt="上傳的圖片">`;
         }
         
         msgDiv.innerHTML = `
             ${contentHtml}
-            <div class="timestamp">Just now</div>
+            <div class="timestamp">剛剛</div>
         `;
         chatBox.appendChild(msgDiv);
     }
 
-    // 8. Function to upload image to Cloudinary
+    // 8. 將圖片上傳到 Cloudinary 的函數
     async function uploadImageToCloudinary(file) {
         const formData = new FormData();
         formData.append("file", file);
@@ -107,52 +108,53 @@
                 body: formData
             });
             const data = await response.json();
-            return data.secure_url; // This is the public URL of the uploaded image
+            return data.secure_url; // 這是上傳後圖片的公開網址
         } catch (error) {
-            console.error("Cloudinary upload failed:", error);
-            alert("Image upload failed!");
+            console.error("Cloudinary 上傳失敗:", error);
+            alert("圖片上傳失敗！請檢查網路或 Cloudinary 設定。");
             return null;
         }
     }
 
-    // 9. Send Button Click Handler
+    // 9. 發送按鈕的點擊事件處理
     sendBtn.addEventListener('click', async () => {
         const text = msgInput.value.trim();
         const file = fileInput.files[0];
 
-        if (!text && !file) return; // Don't send empty messages
+        if (!text && !file) return; // 如果沒有文字也沒有檔案，就不發送
 
-        sendBtn.innerText = "..."; // Show loading state
+        sendBtn.innerText = "發送中..."; // 顯示載入中狀態
         sendBtn.disabled = true;
 
         let imageUrl = null;
 
-        // If a file is selected, upload it first
+        // 如果有選擇檔案，先上傳圖片
         if (file) {
             imageUrl = await uploadImageToCloudinary(file);
         }
 
-        // Save to Firebase Firestore
+        // 將訊息與圖片網址儲存到 Firebase Firestore
         try {
             await addDoc(messagesRef, {
                 text: text,
                 imageUrl: imageUrl,
                 createdAt: serverTimestamp(),
-                user: "Me" // Hardcoded for this test
+                user: "Me" // 為了測試先寫死使用者名稱
             });
 
-            // Clear inputs after sending
+            // 發送成功後清空輸入框
             msgInput.value = '';
             fileInput.value = '';
         } catch (error) {
-            console.error("Error sending message:", error);
+            console.error("發送訊息時發生錯誤:", error);
+            alert("發送失敗，請確認 Firebase 權限是否設為測試模式！");
         } finally {
-            sendBtn.innerText = "Send";
+            sendBtn.innerText = "發送";
             sendBtn.disabled = false;
         }
     });
 
-    // 10. Allow pressing "Enter" to send text
+    // 10. 允許按下 "Enter" 鍵直接發送文字
     msgInput.addEventListener("keypress", function(event) {
         if (event.key === "Enter") {
             event.preventDefault();
