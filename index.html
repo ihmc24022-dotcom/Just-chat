@@ -7,7 +7,7 @@
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #ece5dd; display: flex; justify-content: center; padding: 20px; margin: 0; height: 100vh; box-sizing: border-box; }
         
-        /* 🌟 登入畫面樣式 */
+        /* 登入畫面樣式 */
         #login-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background-color: #ece5dd;
@@ -33,20 +33,24 @@
         
         #chat-header {
             background-color: #075e54; color: white; padding: 10px 15px;
-            display: flex; align-items: center; gap: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); z-index: 10;
+            display: flex; align-items: center; justify-content: space-between; box-shadow: 0 1px 3px rgba(0,0,0,0.1); z-index: 10;
         }
+        .header-left { display: flex; align-items: center; gap: 12px; }
         .profile-pic { font-size: 20px; background: #dfe5e7; color: #555; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; }
         .contact-info { display: flex; flex-direction: column; }
         .contact-name { font-weight: bold; font-size: 16px; }
         .contact-status { font-size: 12px; color: #d1f2eb; margin-top: 2px; }
+        
+        /* 🌟 新增的登出按鈕樣式 */
+        #logout-btn { background: #e53935; color: white; border: none; padding: 6px 12px; border-radius: 5px; cursor: pointer; font-size: 12px; font-weight: bold; }
+        #logout-btn:hover { background: #c62828; }
 
         #chat-box { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); background-size: cover;}
         
-        /* 🌟 訊息氣泡樣式更新 */
         .message { max-width: 70%; padding: 10px 15px; border-radius: 15px; background: #fff; border: 1px solid #ddd; word-wrap: break-word; box-shadow: 0 1px 1px rgba(0,0,0,0.05); align-self: flex-start; }
         .message.me { align-self: flex-end; background: #dcf8c6; border: none; }
         .message img { max-width: 100%; border-radius: 10px; margin-top: 5px; }
-        .sender-name { font-size: 0.75em; color: #e53935; font-weight: bold; margin-bottom: 4px; } /* 別人的名字顯示為紅色小字 */
+        .sender-name { font-size: 0.75em; color: #e53935; font-weight: bold; margin-bottom: 4px; }
         .timestamp { font-size: 0.7em; color: #888; text-align: right; margin-top: 5px; }
         
         #input-area { display: flex; padding: 10px; background: #f0f0f0; border-top: 1px solid #ddd; align-items: center; }
@@ -69,11 +73,14 @@
 
 <div id="chat-container">
     <div id="chat-header">
-        <div class="profile-pic">👥</div>
-        <div class="contact-info">
-            <div class="contact-name">公開聊天室</div>
-            <div class="contact-status">大家都在這裡</div>
+        <div class="header-left">
+            <div class="profile-pic">👥</div>
+            <div class="contact-info">
+                <div class="contact-name">公開聊天室</div>
+                <div class="contact-status" id="user-display-status">大家都在這裡</div>
+            </div>
         </div>
+        <button id="logout-btn">登出</button>
     </div>
 
     <div id="chat-box">
@@ -107,10 +114,8 @@
     const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/drwflposq/image/upload";
     const CLOUDINARY_UPLOAD_PRESET = "ml_default";
 
-    // 🌟 記錄當前使用者的變數
     let currentUser = "";
 
-    // DOM 元素
     const loginScreen = document.getElementById('login-screen');
     const joinBtn = document.getElementById('join-btn');
     const usernameInput = document.getElementById('username-input');
@@ -119,23 +124,51 @@
     const msgInput = document.getElementById('msg-input');
     const fileInput = document.getElementById('file-input');
     const sendBtn = document.getElementById('send-btn');
+    const logoutBtn = document.getElementById('logout-btn');
+    const userDisplayStatus = document.getElementById('user-display-status');
 
-    // 🌟 處理登入邏輯
+    const messagesRef = collection(db, "messages");
+
+    // 🌟 1. 檢查瀏覽器是否已經記住了這個使用者
+    const savedUser = localStorage.getItem("chat_username");
+    
+    if (savedUser) {
+        // 如果有記憶，直接登入
+        currentUser = savedUser;
+        showChatRoom();
+    } else {
+        // 如果沒有記憶，顯示登入畫面
+        loginScreen.style.display = "flex";
+    }
+
+    // 🌟 2. 登入按鈕邏輯：儲存名字到瀏覽器記憶中
     joinBtn.addEventListener('click', () => {
         const name = usernameInput.value.trim();
         if (name !== "") {
-            currentUser = name; // 記住名字
-            loginScreen.style.display = "none"; // 隱藏登入畫面
-            chatContainer.style.display = "flex"; // 顯示聊天室
-            loadMessages(); // 開始載入訊息
+            currentUser = name;
+            localStorage.setItem("chat_username", name); // 把名字存進 LocalStorage
+            showChatRoom();
         } else {
             alert("請輸入暱稱才能進入喔！");
         }
     });
 
-    // 監聽訊息的函數 (移到這裡，確保登入後才執行)
-    const messagesRef = collection(db, "messages");
-    
+    // 🌟 3. 登出按鈕邏輯：清除記憶並重新整理網頁
+    logoutBtn.addEventListener('click', () => {
+        if(confirm("確定要登出嗎？")) {
+            localStorage.removeItem("chat_username"); // 清除記憶
+            location.reload(); // 重新整理網頁，回到登入畫面
+        }
+    });
+
+    // 切換到聊天室畫面的函數
+    function showChatRoom() {
+        loginScreen.style.display = "none";
+        chatContainer.style.display = "flex";
+        userDisplayStatus.innerText = `目前身份：${currentUser}`; // 在左上角顯示現在是誰
+        loadMessages();
+    }
+
     function loadMessages() {
         const q = query(messagesRef, orderBy("createdAt", "asc"));
         onSnapshot(q, (snapshot) => {
@@ -148,20 +181,16 @@
         });
     }
 
-    // 🌟 顯示訊息 (根據發送者不同改變樣式)
     function displayMessage(data) {
         const msgDiv = document.createElement('div');
-        const isMe = data.user === currentUser; // 判斷是不是自己發的
+        const isMe = data.user === currentUser; 
         
         msgDiv.className = `message ${isMe ? "me" : ""}`;
         
         let contentHtml = '';
-        
-        // 如果不是自己發的，就顯示對方的名字
         if (!isMe && data.user) {
             contentHtml += `<div class="sender-name">${data.user}</div>`;
         }
-
         if (data.text) {
             contentHtml += `<div>${data.text}</div>`;
         }
@@ -207,7 +236,6 @@
         }
 
         try {
-            // 🌟 儲存訊息時，帶上目前使用者的名字
             await addDoc(messagesRef, {
                 text: text,
                 imageUrl: imageUrl,
