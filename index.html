@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My GitHub Chat App</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #ece5dd; display: flex; justify-content: center; padding: 20px; }
+        #chat-container { width: 100%; max-width: 400px; background: white; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); overflow: hidden; display: flex; flex-direction: column; height: 80vh; }
+        #chat-box { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+        .message { max-width: 70%; padding: 10px 15px; border-radius: 15px; background: #fff; border: 1px solid #ddd; }
+        .message.me { align-self: flex-end; background: #dcf8c6; border: none; }
+        .message img { max-width: 100%; border-radius: 10px; margin-top: 5px; }
+        .timestamp { font-size: 0.7em; color: #888; text-align: right; margin-top: 5px; }
+        #input-area { display: flex; padding: 10px; background: #f0f0f0; border-top: 1px solid #ddd; }
+        #msg-input { flex: 1; padding: 10px; border-radius: 20px; border: 1px solid #ddd; outline: none; }
+        #file-input { display: none; }
+        .icon-btn { cursor: pointer; padding: 10px; margin: 0 5px; background: none; border: none; font-size: 1.2em; }
+        #send-btn { background: #128c7e; color: white; border: none; border-radius: 20px; padding: 0 20px; margin-left: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<div id="chat-container">
+    <div id="chat-box">
+        </div>
+    <div id="input-area">
+        <label for="file-input" class="icon-btn">📎</label>
+        <input type="file" id="file-input" accept="image/*">
+        <input type="text" id="msg-input" placeholder="Type a message...">
+        <button id="send-btn">Send</button>
+    </div>
+</div>
+
+<script type="module">
+    // 1. Import Firebase from CDNs
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, serverTimestamp, onSnapshot, query, orderBy } 
+        from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+
+    // 2. Your Firebase Configuration
+    const firebaseConfig = {
+        apiKey: "AIzaSyDY9uX6jJW0HMOGQgoel1hR-3ReLlQjw-A",
+        authDomain: "chat-54795.firebaseapp.com",
+        projectId: "chat-54795",
+        storageBucket: "chat-54795.firebasestorage.app",
+        messagingSenderId: "915552330387",
+        appId: "1:915552330387:web:c38152f34d3aa7abe62366"
+    };
+
+    // 3. Initialize Firebase & Firestore
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // 4. Cloudinary Configuration (REPLACE THE PRESET NAME)
+    const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/drwflposq/image/upload";
+    const CLOUDINARY_UPLOAD_PRESET = "YOUR_UNSIGNED_PRESET_NAME"; // <--- PASTE YOUR PRESET HERE!
+
+    // 5. DOM Elements
+    const chatBox = document.getElementById('chat-box');
+    const msgInput = document.getElementById('msg-input');
+    const fileInput = document.getElementById('file-input');
+    const sendBtn = document.getElementById('send-btn');
+
+    // 6. Listen for incoming messages in real-time
+    const messagesRef = collection(db, "messages");
+    const q = query(messagesRef, orderBy("createdAt", "asc"));
+
+    onSnapshot(q, (snapshot) => {
+        chatBox.innerHTML = ''; // Clear chat box
+        snapshot.forEach((doc) => {
+            const data = doc.data();
+            displayMessage(data);
+        });
+        chatBox.scrollTop = chatBox.scrollHeight; // Scroll to bottom
+    });
+
+    // 7. Function to render messages on screen
+    function displayMessage(data) {
+        const msgDiv = document.createElement('div');
+        msgDiv.className = `message ${data.user === "Me" ? "me" : ""}`;
+        
+        let contentHtml = '';
+        if (data.text) {
+            contentHtml += `<div>${data.text}</div>`;
+        }
+        if (data.imageUrl) {
+            contentHtml += `<img src="${data.imageUrl}" alt="Uploaded Image">`;
+        }
+        
+        msgDiv.innerHTML = `
+            ${contentHtml}
+            <div class="timestamp">Just now</div>
+        `;
+        chatBox.appendChild(msgDiv);
+    }
+
+    // 8. Function to upload image to Cloudinary
+    async function uploadImageToCloudinary(file) {
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+
+        try {
+            const response = await fetch(CLOUDINARY_URL, {
+                method: "POST",
+                body: formData
+            });
+            const data = await response.json();
+            return data.secure_url; // This is the public URL of the uploaded image
+        } catch (error) {
+            console.error("Cloudinary upload failed:", error);
+            alert("Image upload failed!");
+            return null;
+        }
+    }
+
+    // 9. Send Button Click Handler
+    sendBtn.addEventListener('click', async () => {
+        const text = msgInput.value.trim();
+        const file = fileInput.files[0];
+
+        if (!text && !file) return; // Don't send empty messages
+
+        sendBtn.innerText = "..."; // Show loading state
+        sendBtn.disabled = true;
+
+        let imageUrl = null;
+
+        // If a file is selected, upload it first
+        if (file) {
+            imageUrl = await uploadImageToCloudinary(file);
+        }
+
+        // Save to Firebase Firestore
+        try {
+            await addDoc(messagesRef, {
+                text: text,
+                imageUrl: imageUrl,
+                createdAt: serverTimestamp(),
+                user: "Me" // Hardcoded for this test
+            });
+
+            // Clear inputs after sending
+            msgInput.value = '';
+            fileInput.value = '';
+        } catch (error) {
+            console.error("Error sending message:", error);
+        } finally {
+            sendBtn.innerText = "Send";
+            sendBtn.disabled = false;
+        }
+    });
+
+    // 10. Allow pressing "Enter" to send text
+    msgInput.addEventListener("keypress", function(event) {
+        if (event.key === "Enter") {
+            event.preventDefault();
+            sendBtn.click();
+        }
+    });
+</script>
+
+</body>
+</html>
