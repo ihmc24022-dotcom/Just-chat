@@ -53,9 +53,9 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // 4. Cloudinary 設定 (已填入你的資料)
+    // 4. Cloudinary 設定 (已修正為 ml_default)
     const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/drwflposq/image/upload";
-    const CLOUDINARY_UPLOAD_PRESET = "501ed6d1-e914-4c1d-b3e7-070f973b89e1";
+    const CLOUDINARY_UPLOAD_PRESET = "ml_default";
 
     // 5. 獲取網頁上的 DOM 元素
     const chatBox = document.getElementById('chat-box');
