@@ -221,8 +221,7 @@
             <h3 id="info-name" style="margin: 0; color: #333;">名稱</h3>
             <p id="info-status" style="color: #128c7e; font-size: 14px; font-weight: bold; margin-top: 5px;">狀態</p>
             <div id="info-extra" style="font-size: 13px; color: #555; margin-top: 15px; text-align: left; background: #f4f5f5; padding: 12px; border-radius: 8px; line-height: 1.6;">
-                </div>
-            
+            </div>
             <button id="action-btn" style="display: none; margin-top: 15px; background: #e53935; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; width: 100%; font-weight: bold; transition: 0.2s;">操作按鈕</button>
             <button id="close-info-btn" style="margin-top: 10px; background: #e0e0e0; color: #333; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; width: 100%; font-weight: bold; transition: 0.2s;">關閉</button>
         </div>
@@ -251,9 +250,9 @@
 
     let currentUser = "";
     let currentRoom = "global"; 
+    let currentRoomMemberCount = 0; // 🌟 追蹤當前房間有幾個人，用來判斷已讀
     let unsubscribeMessages = null;
 
-    // DOM Elements
     const loginScreen = document.getElementById('login-screen');
     const mainContainer = document.getElementById('main-container');
     const joinBtn = document.getElementById('join-btn');
@@ -364,12 +363,12 @@
         myNameDisplay.innerText = currentUser; 
         
         loadFriendsAndGroups(); 
-        loadMessages(); 
+        // 🌟 這裡使用 switchRoom 來統一初始化公開聊天室
+        switchRoom("global", "公開聊天室", "👥", "大家都在這裡");
     }
 
     closeInfoBtn.onclick = () => infoModal.style.display = 'none';
 
-    // 🌟 點擊上方標題的邏輯分流：如果是群組就打開名單，不然就是個人檔案
     chatHeaderInfo.onclick = async () => {
         if (currentRoom.startsWith("group_")) {
             showGroupInfo(chatHeaderName.innerText, currentRoom);
@@ -378,14 +377,13 @@
         }
     };
 
-    // 🌟 專門顯示【群組資訊與名單】的函數 (內建移除按鈕)
     async function showGroupInfo(groupName, groupId) {
         infoModal.style.display = 'flex';
         infoName.innerText = groupName;
         infoIcon.innerText = "👥";
         infoStatus.innerText = "群組成員名單";
         infoExtra.innerHTML = "讀取成員名單中...";
-        actionBtn.style.display = "none"; // 我們把按鈕做在名單裡面了，所以隱藏底部這個按鈕
+        actionBtn.style.display = "none";
 
         try {
             const usersSnap = await getDocs(collection(db, "users"));
@@ -397,7 +395,6 @@
                 }
             });
 
-            // 建立帶有移除按鈕的名單列表
             let listHtml = `<strong>群組成員 (${membersList.length} 人)：</strong><br>
                 <div style="margin-top:10px; max-height:160px; overflow-y:auto; background:#fff; border:1px solid #ddd; border-radius:5px; padding:5px;">`;
 
@@ -422,7 +419,6 @@
         }
     }
 
-    // 專門顯示【個人資訊】的函數
     async function showUserInfo(targetUser, roomId) {
         infoModal.style.display = 'flex';
         infoName.innerText = targetUser;
@@ -482,7 +478,6 @@
         }
     }
 
-    // 🌟 將人移出群組的邏輯，如果移除成功會自動重新整理名單畫面
     async function removeUserFromGroup(targetName, groupId) {
         if (confirm(`確定要將「${targetName}」從此群組中移除嗎？`)) {
             try {
@@ -496,7 +491,6 @@
                             groups: arrayRemove(groupToRemove)
                         });
                         alert(`已將 ${targetName} 移出群組`);
-                        // 如果是透過群組名單移除，自動重新整理名單
                         showGroupInfo(chatHeaderName.innerText, groupId); 
                     }
                 }
@@ -664,14 +658,43 @@
         switchRoom("global", "公開聊天室", "👥", "大家都在這裡");
     };
 
-    function switchRoom(roomId, displayName, icon, status) {
+    // 🌟 全新的 switchRoom：負責切換房間，並且異步計算群組人數以支援已讀功能
+    async function switchRoom(roomId, displayName, icon, status) {
         currentRoom = roomId;
         chatHeaderName.innerText = displayName;
         chatHeaderIcon.innerText = icon;
         chatHeaderStatus.innerText = status;
-        loadMessages(); 
+
+        if (roomId === "global") {
+            currentRoomMemberCount = 0; 
+            loadMessages();
+        } else if (roomId.startsWith("group_")) {
+            currentRoomMemberCount = 999; // 先預設很大，防止剛載入就出現藍勾勾
+            chatHeaderStatus.innerText = status + " (計算已讀條件中...)";
+            loadMessages(); // 先載入訊息畫面
+            
+            try {
+                // 去抓整個群組的人數
+                const usersSnap = await getDocs(collection(db, "users"));
+                let count = 0;
+                usersSnap.forEach(docSnap => {
+                    const userData = docSnap.data();
+                    if (userData.groups && userData.groups.some(g => g.id === roomId)) count++;
+                });
+                currentRoomMemberCount = count;
+                chatHeaderStatus.innerText = status + ` (共 ${count} 人)`;
+                loadMessages(); // 知道人數後，重新載入訊息以顯示正確的藍勾勾
+            } catch(e) {
+                console.error("無法計算群組人數", e);
+                chatHeaderStatus.innerText = status;
+            }
+        } else {
+            currentRoomMemberCount = 2; // 一對一私聊固定是 2 人
+            loadMessages();
+        }
     }
 
+    // 🌟 全新的 loadMessages：加入了 readBy 名單陣列來處理多人的已讀狀態
     function loadMessages() {
         if (unsubscribeMessages) unsubscribeMessages();
 
@@ -683,25 +706,47 @@
                 const data = docSnap.data();
                 const msgRoom = data.roomId || "global"; 
                 
-                if (msgRoom === currentRoom) {
-                    displayMessage(data);
-                }
+                // 檢查這是不是需要處理已讀的房間 (有牽涉到自己，且不是公開區)
+                const isRelevantRoom = msgRoom.includes(currentUser) || msgRoom.startsWith("group_");
 
-                if (msgRoom !== "global" && !msgRoom.startsWith("group_") && data.user !== currentUser && msgRoom.includes(currentUser)) {
+                if (isRelevantRoom && msgRoom !== "global" && data.user !== currentUser) {
                     const docRef = doc(db, "messages", docSnap.id);
-                    if (currentRoom === msgRoom && data.status !== "read") {
-                        updateDoc(docRef, { status: "read" });
+                    let currentReadBy = data.readBy || [];
+
+                    if (currentRoom === msgRoom) {
+                        // 如果我正在看這個房間，把我加入這則訊息的已讀名單 (readBy array)
+                        if (!currentReadBy.includes(currentUser)) {
+                            updateDoc(docRef, { readBy: arrayUnion(currentUser), status: "read" });
+                            currentReadBy.push(currentUser); 
+                            data.readBy = currentReadBy;
+                        } else if (data.status !== "read" && !data.readBy) {
+                            // 兼容舊資料
+                            updateDoc(docRef, { status: "read" });
+                            data.status = "read";
+                        }
+                    } else {
+                        // 如果我沒在看這個房間，標記為已送達 (主要用於1對1)
+                        if (data.status === "sent" && !msgRoom.startsWith("group_")) {
+                            updateDoc(docRef, { status: "delivered" });
+                        }
                     }
-                    else if (currentRoom !== msgRoom && data.status === "sent") {
-                        updateDoc(docRef, { status: "delivered" });
+                }
+                
+                if (msgRoom === currentRoom) {
+                    // 取得當前的已讀名單傳遞給顯示介面
+                    let currentReadBy = data.readBy || [data.user];
+                    if (!data.readBy && data.status === "read") {
+                        currentReadBy = [data.user, "someone"]; // 兼容舊資料的已讀假數據
                     }
+                    displayMessage(data, currentReadBy);
                 }
             });
             chatBox.scrollTop = chatBox.scrollHeight; 
         });
     }
 
-    function displayMessage(data) {
+    // 🌟 更新的 displayMessage：根據 readBy 名單人數來決定勾勾顏色
+    function displayMessage(data, readByArray = []) {
         const msgDiv = document.createElement('div');
         const isMe = data.user === currentUser; 
         msgDiv.className = `message ${isMe ? "me" : ""}`;
@@ -726,10 +771,24 @@
         }
 
         let ticksHtml = '';
-        if (isMe && currentRoom !== "global" && !currentRoom.startsWith("group_")) {
-            if (data.status === "read") {
+        if (isMe && currentRoom !== "global") {
+            let isFullyRead = false; // 是否「所有人都看過」 (雙藍勾)
+            let isDelivered = false; // 是否「已經有人看過但還沒全部看過」或「已送達對方手機」 (雙灰勾)
+
+            if (data.readBy) {
+                // 如果已讀人數 >= 群組總人數，就是全部已讀
+                isFullyRead = (readByArray.length >= currentRoomMemberCount && currentRoomMemberCount > 1);
+                // 只要除了自己以外有別人看過，就算 delivered
+                isDelivered = (readByArray.length > 1 || data.status === "delivered");
+            } else {
+                // 兼容舊版本訊息
+                isFullyRead = (data.status === "read");
+                isDelivered = (data.status === "delivered" || data.status === "read");
+            }
+
+            if (isFullyRead) {
                 ticksHtml = `<span style="color: #53bdeb; font-weight: bold; margin-left: 4px; font-size: 13px;">✓✓</span>`;
-            } else if (data.status === "delivered") {
+            } else if (isDelivered) {
                 ticksHtml = `<span style="color: #999; font-weight: bold; margin-left: 4px; font-size: 13px;">✓✓</span>`;
             } else {
                 ticksHtml = `<span style="color: #999; font-weight: bold; margin-left: 4px; font-size: 13px;">✓</span>`;
@@ -778,7 +837,8 @@
                 createdAt: serverTimestamp(),
                 user: currentUser,
                 roomId: currentRoom,
-                status: "sent" 
+                status: "sent",
+                readBy: [currentUser] // 🌟 發送時把自己加入名單
             });
             msgInput.value = '';
             fileInput.value = '';
@@ -820,7 +880,8 @@
                             createdAt: serverTimestamp(),
                             user: currentUser,
                             roomId: currentRoom,
-                            status: "sent" 
+                            status: "sent",
+                            readBy: [currentUser] // 🌟 發送時把自己加入名單
                         });
                     } catch (error) {
                         console.error("GIF 發送錯誤:", error);
@@ -858,7 +919,6 @@
         }
     });
 
-    // 暴露給全域環境讓 HTML onclick 能呼叫
     window.showUserInfo = showUserInfo;
     window.removeUserFromGroup = removeUserFromGroup;
 
