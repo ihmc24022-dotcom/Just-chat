@@ -439,20 +439,26 @@
     // 🌟 升級為版本 9，確保載入所有新設定
     const CLIENT_VERSION = 9; 
 
-    const configRef = doc(db, "system", "config");
-    onSnapshot(configRef, (docSnap) => {
-        if (docSnap.exists()) {
-            const serverVersion = docSnap.data().version;
-            if (serverVersion > CLIENT_VERSION) {
-                alert("✨ 系統自動更新至最新版本！");
-                window.location.reload(true); 
-            } else if (CLIENT_VERSION > serverVersion) {
-                updateDoc(configRef, { version: CLIENT_VERSION });
-            }
-        } else {
-            setDoc(configRef, { version: CLIENT_VERSION });
+const configRef = doc(db, "system", "config");
+let versionCheckDone = false;
+
+onSnapshot(configRef, (docSnap) => {
+    if (versionCheckDone) return;
+    
+    if (docSnap.exists()) {
+        const serverVersion = docSnap.data().version;
+        if (serverVersion > CLIENT_VERSION) {
+            versionCheckDone = true;
+            alert("✨ 系統已是最新版本！");
+        } else if (CLIENT_VERSION > serverVersion) {
+            updateDoc(configRef, { version: CLIENT_VERSION });
+            versionCheckDone = true;
         }
-    });
+    } else {
+        setDoc(configRef, { version: CLIENT_VERSION });
+        versionCheckDone = true;
+    }
+});
 
     let currentUser = "";
     let currentRoom = "global"; 
