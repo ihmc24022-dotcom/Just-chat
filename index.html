@@ -12,6 +12,31 @@
     <link rel="icon" href="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTksRJqnJXEC4r-0r_O-_mMFGU-ndSz5oUwzL54Afj0Sw&s">
 
     <style>
+.message img {
+    max-width: 120px !important;
+    max-height: 120px !important;
+    width: auto !important;
+    height: auto !important;
+    object-fit: contain !important;
+    border-radius: 8px !important;
+}
+
+.message {
+    max-width: 70% !important;
+    word-break: break-word !important;
+    white-space: normal !important;
+}
+
+#input-area {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+}
+
+#msg-input {
+    flex: 1 !important;
+    min-width: 80px !important;
+}
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #ece5dd; display: flex; justify-content: center; align-items: center; padding: 20px; margin: 0; height: 100vh; box-sizing: border-box; }
         
         #login-screen {
