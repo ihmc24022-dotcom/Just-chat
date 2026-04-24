@@ -248,8 +248,8 @@
     const CLOUDINARY_UPLOAD_PRESET = "ml_default";
     const TENOR_API_KEY = "LIVDSRZULELA"; 
 
-    // 🌟 版本控制機制：數字更新為 3 (新增解散群組功能)
-    const CLIENT_VERSION = 3; 
+    // 🌟 版本控制機制：數字更新為 4 (修復被踢出群組後沒有自動跳出的 Bug)
+    const CLIENT_VERSION = 4; 
 
     const configRef = doc(db, "system", "config");
     onSnapshot(configRef, (docSnap) => {
@@ -401,7 +401,6 @@
         infoStatus.innerText = "群組成員名單";
         infoExtra.innerHTML = "讀取成員名單中...";
         
-        // 🌟 新增：顯示「解散群組」按鈕
         actionBtn.style.display = "block";
         actionBtn.innerText = "🗑️ 解散群組";
         actionBtn.onclick = () => deleteGroup(groupName, groupId);
@@ -440,14 +439,12 @@
         }
     }
 
-    // 🌟 新增：解散/刪除群組的函數
     async function deleteGroup(groupName, groupId) {
         if (confirm(`確定要解散並刪除群組「${groupName}」嗎？這會將所有成員移出此群組！`)) {
             try {
                 actionBtn.innerText = "刪除中...";
                 actionBtn.disabled = true;
 
-                // 找到所有擁有這個群組的用戶並移除它
                 const usersSnap = await getDocs(collection(db, "users"));
                 const promises = [];
                 
@@ -465,7 +462,7 @@
 
                 alert(`群組「${groupName}」已成功解散！`);
                 infoModal.style.display = 'none';
-                globalChatBtn.click(); // 切換回公開聊天室
+                globalChatBtn.click(); 
             } catch (error) {
                 console.error("解散群組失敗:", error);
                 alert("刪除群組發生錯誤，請重試。");
@@ -666,6 +663,7 @@
         }
     };
 
+    // 🌟 修改這裡：加入了「強制退回大廳」的防護機制
     function loadFriendsAndGroups() {
         const myRef = doc(db, "users", currentUser);
         onSnapshot(myRef, (docSnap) => {
@@ -674,10 +672,15 @@
                 const data = docSnap.data();
                 
                 const groups = data.groups || [];
+                let isCurrentRoomValid = false; // 紀錄目前房間是否合法
+
                 groups.forEach((group) => {
                     const div = document.createElement("div");
                     div.className = "contact-item";
-                    if (currentRoom === group.id) div.classList.add('active');
+                    if (currentRoom === group.id) {
+                        div.classList.add('active');
+                        isCurrentRoomValid = true; // 房間合法（你還在這個群組內）
+                    }
 
                     div.innerHTML = `<div class="profile-pic" style="background:#e5a935; color:white; font-size: 16px;">👥</div><div class="contact-name">${group.name}</div>`;
                     
@@ -694,7 +697,10 @@
                     const div = document.createElement("div");
                     div.className = "contact-item";
                     const roomId = [currentUser, friendName].sort().join('_');
-                    if (currentRoom === roomId) div.classList.add('active');
+                    if (currentRoom === roomId) {
+                        div.classList.add('active');
+                        isCurrentRoomValid = true; // 房間合法（你們還是好友）
+                    }
 
                     div.innerHTML = `<div class="profile-pic">👤</div><div class="contact-name">${friendName}</div>`;
                     
@@ -705,6 +711,13 @@
                     };
                     friendListContainer.appendChild(div);
                 });
+
+                // 🌟 防護機制：如果你不在大廳，而且你目前所在的房間已經消失了（被踢或解散）
+                if (currentRoom !== "global" && !isCurrentRoomValid) {
+                    alert("您已被移出該聊天室，或群組已解散。");
+                    globalChatBtn.click(); // 強制切換回公開聊天室
+                    if (infoModal.style.display !== "none") infoModal.style.display = "none";
+                }
             }
         });
     }
