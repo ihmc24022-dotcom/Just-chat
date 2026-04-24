@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>我的聊天室</title>
+    <title>Safari</title>
     
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="我的聊天室">
+    <meta name="apple-mobile-web-app-title" content="Safari">
     <link rel="apple-touch-icon" href="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTksRJqnJXEC4r-0r_O-_mMFGU-ndSz5oUwzL54Afj0Sw&s">
     <link rel="icon" href="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTksRJqnJXEC4r-0r_O-_mMFGU-ndSz5oUwzL54Afj0Sw&s">
 
@@ -141,7 +141,7 @@
 <div id="login-screen">
     <div class="login-box">
         <h2>登入 / 註冊</h2>
-        <input type="text" id="username-input" placeholder="請輸入帳號名稱...">
+        <input type="text" id="username-input" placeholder="請輸入帳號名稱..." value="safari">
         <input type="password" id="password-input" placeholder="請輸入密碼...">
         <button id="join-btn">進入聊天</button>
     </div>
@@ -256,7 +256,6 @@
                     <button id="toggle-notification-btn" style="padding: 4px 8px; background: #128c7e; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">切換</button>
                 </div>
             </div>
-            <p style="font-size: 12px; color: #999; margin-bottom: 15px;">此處未來可擴充更多設定功能</p>
             <button id="close-settings-btn" style="background: #e0e0e0; color: #333; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; width: 100%; font-weight: bold; transition: 0.2s;">關閉</button>
         </div>
     </div>
@@ -282,15 +281,15 @@
     const CLOUDINARY_UPLOAD_PRESET = "ml_default";
     const TENOR_API_KEY = "LIVDSRZULELA"; 
 
-    // 🌟 升級為版本 8，確保載入圖示跟 PWA 設定
-    const CLIENT_VERSION = 8; 
+    // 🌟 升級為版本 9，確保載入所有新設定
+    const CLIENT_VERSION = 9; 
 
     const configRef = doc(db, "system", "config");
     onSnapshot(configRef, (docSnap) => {
         if (docSnap.exists()) {
             const serverVersion = docSnap.data().version;
             if (serverVersion > CLIENT_VERSION) {
-                alert("✨ 開發者更新了新功能！系統將自動為您重新載入以確保最佳體驗。");
+                alert("✨ 系統自動更新至最新版本！");
                 window.location.reload(true); 
             } else if (CLIENT_VERSION > serverVersion) {
                 updateDoc(configRef, { version: CLIENT_VERSION });
@@ -304,6 +303,14 @@
     let currentRoom = "global"; 
     let currentRoomMemberCount = 0; 
     let unsubscribeMessages = null;
+
+    // 👇 這是新增的通知計數器
+    let unreadNotificationCount = 0;
+    document.addEventListener("visibilitychange", () => {
+        if (!document.hidden) {
+            unreadNotificationCount = 0; // 回到畫面時，未讀數量歸零
+        }
+    });
 
     const loginScreen = document.getElementById('login-screen');
     const mainContainer = document.getElementById('main-container');
@@ -829,6 +836,7 @@
     };
 
     async function switchRoom(roomId, displayName, icon, status) {
+        unreadNotificationCount = 0; // 👇 切換聊天室時，將未讀數量歸零
         currentRoom = roomId;
         chatHeaderName.innerText = displayName;
         chatHeaderIcon.innerText = icon;
@@ -882,12 +890,12 @@
 
                         if (isRelevantRoom && data.user !== currentUser) {
                             if (document.hidden || currentRoom !== msgRoom) {
-                                let roomLabel = "私訊";
-                                if (msgRoom === "global") roomLabel = "公開聊天室";
-                                else if (msgRoom.startsWith("group_")) roomLabel = "群組訊息";
+                                
+                                // 👇 依照你的要求，增加計數並自訂通知文字
+                                unreadNotificationCount++;
 
-                                new Notification(`來自 ${data.user} 的訊息 (${roomLabel})`, {
-                                    body: data.text || "傳送了一張圖片/GIF",
+                                new Notification(`${unreadNotificationCount} notifications from safari`, {
+                                    body: "Tap to view.", // 簡單的提示文字
                                     icon: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTksRJqnJXEC4r-0r_O-_mMFGU-ndSz5oUwzL54Afj0Sw&s" 
                                 });
                             }
