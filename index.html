@@ -241,9 +241,15 @@
             <div style="font-size: 13px; color: #555; text-align: left; background: #f4f5f5; padding: 12px; border-radius: 8px; line-height: 1.6; margin-bottom: 15px;">
                 <strong>目前版本：</strong> v<span id="settings-version"></span><br>
                 <strong>當前登入：</strong> <span id="settings-account"></span><br>
-                <strong>系統通知：</strong> <span id="settings-notification" style="color:#128c7e; font-weight:bold;"></span>
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 5px;">
+                    <div>
+                        <strong>系統通知：</strong> 
+                        <span id="settings-notification" style="font-weight:bold;"></span>
+                    </div>
+                    <button id="toggle-notification-btn" style="padding: 4px 8px; background: #128c7e; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">切換</button>
+                </div>
             </div>
-            <p style="font-size: 12px; color: #999; margin-bottom: 15px;">此處未來可擴充更多設定功能<br>(如：切換主題、系統通知等)</p>
+            <p style="font-size: 12px; color: #999; margin-bottom: 15px;">此處未來可擴充更多設定功能</p>
             <button id="close-settings-btn" style="background: #e0e0e0; color: #333; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; width: 100%; font-weight: bold; transition: 0.2s;">關閉</button>
         </div>
     </div>
@@ -269,8 +275,8 @@
     const CLOUDINARY_UPLOAD_PRESET = "ml_default";
     const TENOR_API_KEY = "LIVDSRZULELA"; 
 
-    // 🌟 版本更新為 6 (新增瀏覽器通知功能)
-    const CLIENT_VERSION = 6; 
+    // 🌟 版本更新為 7 (新增通知自訂開關功能)
+    const CLIENT_VERSION = 7; 
 
     const configRef = doc(db, "system", "config");
     onSnapshot(configRef, (docSnap) => {
@@ -301,19 +307,18 @@
     const friendListContainer = document.getElementById('friend-list-container');
     const globalChatBtn = document.getElementById('global-chat-btn');
     
+    // UI Elements...
     const addFriendBtn = document.getElementById('add-friend-btn');
     const addFriendModal = document.getElementById('add-friend-modal');
     const cancelAddBtn = document.getElementById('cancel-add-btn');
     const confirmAddBtn = document.getElementById('confirm-add-btn');
     const newFriendInput = document.getElementById('new-friend-input');
-
     const createGroupBtn = document.getElementById('create-group-btn');
     const createGroupModal = document.getElementById('create-group-modal');
     const cancelGroupBtn = document.getElementById('cancel-group-btn');
     const confirmGroupBtn = document.getElementById('confirm-group-btn');
     const newGroupName = document.getElementById('new-group-name');
     const groupFriendList = document.getElementById('group-friend-list');
-
     const infoModal = document.getElementById('info-modal');
     const closeInfoBtn = document.getElementById('close-info-btn');
     const infoIcon = document.getElementById('info-icon');
@@ -323,13 +328,14 @@
     const chatHeaderInfo = document.getElementById('chat-header-info');
     const myProfileBtn = document.getElementById('my-profile-btn');
     const actionBtn = document.getElementById('action-btn');
-
+    
     const settingsBtn = document.getElementById('settings-btn');
     const settingsModal = document.getElementById('settings-modal');
     const closeSettingsBtn = document.getElementById('close-settings-btn');
     const settingsVersion = document.getElementById('settings-version');
     const settingsAccount = document.getElementById('settings-account');
     const settingsNotification = document.getElementById('settings-notification');
+    const toggleNotificationBtn = document.getElementById('toggle-notification-btn');
 
     const chatHeaderName = document.getElementById('chat-header-name');
     const chatHeaderIcon = document.getElementById('chat-header-icon');
@@ -380,7 +386,6 @@
                 loginSuccess(name, pass);
             }
         } catch (error) {
-            console.error("登入錯誤:", error);
             alert("系統錯誤，請稍後再試！");
         } finally {
             joinBtn.innerText = "進入聊天";
@@ -403,17 +408,62 @@
         }
     });
 
+    // 🌟 更新設定視窗的通知狀態顯示 UI
+    function updateNotificationUI() {
+        const isLocalEnabled = localStorage.getItem("chat_notifications_enabled") !== "false";
+        
+        if ("Notification" in window) {
+            if (Notification.permission === "granted") {
+                toggleNotificationBtn.style.display = "inline-block";
+                if (isLocalEnabled) {
+                    settingsNotification.innerText = "已開啟";
+                    settingsNotification.style.color = "#128c7e";
+                    toggleNotificationBtn.innerText = "關閉通知";
+                    toggleNotificationBtn.style.background = "#e53935";
+                } else {
+                    settingsNotification.innerText = "已暫停";
+                    settingsNotification.style.color = "#e53935";
+                    toggleNotificationBtn.innerText = "開啟通知";
+                    toggleNotificationBtn.style.background = "#128c7e";
+                }
+            } else if (Notification.permission === "denied") {
+                settingsNotification.innerText = "已封鎖 (請至瀏覽器設定開啟)";
+                settingsNotification.style.color = "#888";
+                toggleNotificationBtn.style.display = "none";
+            } else {
+                settingsNotification.innerText = "未授權";
+                settingsNotification.style.color = "#888";
+                toggleNotificationBtn.style.display = "inline-block";
+                toggleNotificationBtn.innerText = "允許通知";
+                toggleNotificationBtn.style.background = "#128c7e";
+            }
+        } else {
+            settingsNotification.innerText = "瀏覽器不支援";
+            toggleNotificationBtn.style.display = "none";
+        }
+    }
+
     settingsBtn.addEventListener('click', () => {
         settingsModal.style.display = 'flex';
         settingsVersion.innerText = CLIENT_VERSION;
         settingsAccount.innerText = currentUser;
-        
+        updateNotificationUI();
+    });
+
+    // 🌟 處理開關按鈕點擊事件
+    toggleNotificationBtn.addEventListener('click', () => {
         if ("Notification" in window) {
-            if (Notification.permission === "granted") settingsNotification.innerText = "已啟用";
-            else if (Notification.permission === "denied") settingsNotification.innerText = "已封鎖 (請至瀏覽器設定開啟)";
-            else settingsNotification.innerText = "未設定";
-        } else {
-            settingsNotification.innerText = "不支援此功能";
+            if (Notification.permission === "default") {
+                // 如果還沒授權，就要求權限
+                Notification.requestPermission().then(permission => {
+                    updateNotificationUI();
+                });
+            } else if (Notification.permission === "granted") {
+                // 如果已授權，就透過 localStorage 切換開關
+                const isLocalEnabled = localStorage.getItem("chat_notifications_enabled") !== "false";
+                localStorage.setItem("chat_notifications_enabled", isLocalEnabled ? "false" : "true");
+                updateNotificationUI();
+            }
         }
     });
 
@@ -426,14 +476,11 @@
         mainContainer.style.display = "flex";
         myNameDisplay.innerText = currentUser; 
         
-        // 🌟 新增：向瀏覽器請求推播通知權限
-        if ("Notification" in window) {
-            if (Notification.permission === "default") {
-                Notification.requestPermission().then(permission => {
-                    if (permission === "granted") {
-                        console.log("通知權限已開通！");
-                    }
-                });
+        // 如果瀏覽器還沒授權通知，且使用者沒特別關閉，就預設問一次
+        if ("Notification" in window && Notification.permission === "default") {
+            const isLocalEnabled = localStorage.getItem("chat_notifications_enabled") !== "false";
+            if(isLocalEnabled) {
+                Notification.requestPermission();
             }
         }
 
@@ -521,7 +568,6 @@
                 infoModal.style.display = 'none';
                 globalChatBtn.click(); 
             } catch (error) {
-                console.error("解散群組失敗:", error);
                 alert("刪除群組發生錯誤，請重試。");
             } finally {
                 actionBtn.innerText = "🗑️ 解散群組";
@@ -639,7 +685,6 @@
                 alert(`找不到帳號「${friendName}」，請確認名稱是否正確。`);
             }
         } catch (error) {
-            console.error("加好友錯誤:", error);
             alert("發生錯誤，請稍後再試。");
         } finally {
             confirmAddBtn.innerText = "新增";
@@ -712,7 +757,6 @@
             alert(`成功建立群組「${groupName}」！`);
             createGroupModal.style.display = "none";
         } catch (error) {
-            console.error("建立群組錯誤:", error);
             alert("發生錯誤，請稍後再試。");
         } finally {
             confirmGroupBtn.innerText = "建立";
@@ -808,7 +852,6 @@
                 chatHeaderStatus.innerText = status + ` (共 ${count} 人)`;
                 loadMessages(); 
             } catch(e) {
-                console.error("無法計算群組人數", e);
                 chatHeaderStatus.innerText = status;
             }
         } else {
@@ -820,35 +863,33 @@
     function loadMessages() {
         if (unsubscribeMessages) unsubscribeMessages();
 
-        let isInitialLoad = true; // 🌟 判斷是不是剛點進聊天室，避免載入舊訊息時瘋狂發通知
+        let isInitialLoad = true; 
 
         const q = query(messagesRef, orderBy("createdAt", "asc"));
         unsubscribeMessages = onSnapshot(q, (snapshot) => {
             
-            // 🌟 處理瀏覽器通知：當有新訊息加入時
-            if (!isInitialLoad) {
+            // 🌟 檢查本機設定與瀏覽器權限
+            const isLocalEnabled = localStorage.getItem("chat_notifications_enabled") !== "false";
+            const canNotify = "Notification" in window && Notification.permission === "granted" && isLocalEnabled;
+
+            if (!isInitialLoad && canNotify) {
                 snapshot.docChanges().forEach((change) => {
                     if (change.type === "added") {
                         const data = change.doc.data();
                         const msgRoom = data.roomId || "global";
                         
-                        // 確認這則訊息跟自己有關 (公頻、自己的群組，或自己的私聊)
                         const isRelevantRoom = msgRoom === "global" || msgRoom.includes(currentUser) || msgRoom.startsWith("group_");
 
                         if (isRelevantRoom && data.user !== currentUser) {
-                            if ("Notification" in window && Notification.permission === "granted") {
-                                // 如果網頁在背景 (隱藏狀態)，或是訊息來自「你目前不在看的聊天室」，就發出通知
-                                if (document.hidden || currentRoom !== msgRoom) {
-                                    let roomLabel = "私訊";
-                                    if (msgRoom === "global") roomLabel = "公開聊天室";
-                                    else if (msgRoom.startsWith("group_")) roomLabel = "群組訊息";
+                            if (document.hidden || currentRoom !== msgRoom) {
+                                let roomLabel = "私訊";
+                                if (msgRoom === "global") roomLabel = "公開聊天室";
+                                else if (msgRoom.startsWith("group_")) roomLabel = "群組訊息";
 
-                                    // 彈出通知小視窗
-                                    new Notification(`來自 ${data.user} 的訊息 (${roomLabel})`, {
-                                        body: data.text || "傳送了一張圖片/GIF",
-                                        icon: "https://cdn-icons-png.flaticon.com/512/3193/3193015.png" // 使用一個對話泡泡當作預設 Icon
-                                    });
-                                }
+                                new Notification(`來自 ${data.user} 的訊息 (${roomLabel})`, {
+                                    body: data.text || "傳送了一張圖片/GIF",
+                                    icon: "https://cdn-icons-png.flaticon.com/512/3193/3193015.png" 
+                                });
                             }
                         }
                     }
@@ -892,7 +933,7 @@
                 }
             });
             chatBox.scrollTop = chatBox.scrollHeight; 
-            isInitialLoad = false; // 舊訊息已經載入完畢，之後進來的都是新訊息
+            isInitialLoad = false; 
         });
     }
 
@@ -958,7 +999,6 @@
             const data = await response.json();
             return data.secure_url;
         } catch (error) {
-            console.error("Cloudinary 上傳失敗:", error);
             alert("圖片上傳失敗！");
             return null;
         }
@@ -995,7 +1035,6 @@
             msgInput.value = '';
             fileInput.value = '';
         } catch (error) {
-            console.error("發送錯誤:", error);
             alert("發送失敗，請確認 Firebase 權限！");
         } finally {
             sendBtn.innerText = "發送";
@@ -1036,14 +1075,12 @@
                             readBy: [currentUser] 
                         });
                     } catch (error) {
-                        console.error("GIF 發送錯誤:", error);
                         alert("GIF 發送失敗");
                     }
                 };
                 gifResultsContainer.appendChild(img);
             });
         } catch (error) {
-            console.error("API 獲取失敗", error);
             gifResultsContainer.innerHTML = '<p style="color:red; text-align:center; width:100%; font-size:12px;">載入失敗，請稍後再試</p>';
         }
     }
