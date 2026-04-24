@@ -1488,7 +1488,7 @@
                 setBy: currentUser,
                 timestamp: serverTimestamp()
             });
-            aiB otConfig = { provider, apiKey };
+            aiBotConfig = { provider, apiKey };
             alert("機器人設定已保存！");
             document.getElementById('ai-bot-modal').style.display = 'none';
         } catch(e) { alert("保存失敗"); }
