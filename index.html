@@ -248,14 +248,13 @@
     const CLOUDINARY_UPLOAD_PRESET = "ml_default";
     const TENOR_API_KEY = "LIVDSRZULELA"; 
 
-    // 🌟 版本控制機制：數字更新為 2
-    const CLIENT_VERSION = 2; 
+    // 🌟 版本控制機制：數字更新為 3 (新增解散群組功能)
+    const CLIENT_VERSION = 3; 
 
     const configRef = doc(db, "system", "config");
     onSnapshot(configRef, (docSnap) => {
         if (docSnap.exists()) {
             const serverVersion = docSnap.data().version;
-            
             if (serverVersion > CLIENT_VERSION) {
                 alert("✨ 開發者更新了新功能！系統將自動為您重新載入以確保最佳體驗。");
                 window.location.reload(true); 
@@ -401,7 +400,11 @@
         infoIcon.innerText = "👥";
         infoStatus.innerText = "群組成員名單";
         infoExtra.innerHTML = "讀取成員名單中...";
-        actionBtn.style.display = "none";
+        
+        // 🌟 新增：顯示「解散群組」按鈕
+        actionBtn.style.display = "block";
+        actionBtn.innerText = "🗑️ 解散群組";
+        actionBtn.onclick = () => deleteGroup(groupName, groupId);
 
         try {
             const usersSnap = await getDocs(collection(db, "users"));
@@ -434,6 +437,42 @@
 
         } catch(e) {
             infoExtra.innerHTML = `無法讀取成員名單。<br><br><span style="font-size: 10px; color: #aaa;">ID: ${groupId}</span>`;
+        }
+    }
+
+    // 🌟 新增：解散/刪除群組的函數
+    async function deleteGroup(groupName, groupId) {
+        if (confirm(`確定要解散並刪除群組「${groupName}」嗎？這會將所有成員移出此群組！`)) {
+            try {
+                actionBtn.innerText = "刪除中...";
+                actionBtn.disabled = true;
+
+                // 找到所有擁有這個群組的用戶並移除它
+                const usersSnap = await getDocs(collection(db, "users"));
+                const promises = [];
+                
+                usersSnap.forEach(docSnap => {
+                    const userData = docSnap.data();
+                    const groupToRemove = userData.groups && userData.groups.find(g => g.id === groupId);
+                    if (groupToRemove) {
+                        promises.push(updateDoc(doc(db, "users", docSnap.id), {
+                            groups: arrayRemove(groupToRemove)
+                        }));
+                    }
+                });
+
+                await Promise.all(promises);
+
+                alert(`群組「${groupName}」已成功解散！`);
+                infoModal.style.display = 'none';
+                globalChatBtn.click(); // 切換回公開聊天室
+            } catch (error) {
+                console.error("解散群組失敗:", error);
+                alert("刪除群組發生錯誤，請重試。");
+            } finally {
+                actionBtn.innerText = "🗑️ 解散群組";
+                actionBtn.disabled = false;
+            }
         }
     }
 
@@ -828,7 +867,6 @@
         const file = fileInput.files[0];
         if (!text && !file) return;
 
-        // 🌟 新增字數限制檢查
         if (text.length > 200) {
             alert("訊息太長囉！請將字數控制在 200 字以內。");
             return;
