@@ -55,7 +55,8 @@
         .modal-content { background: white; padding: 20px; border-radius: 8px; width: 250px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
         .modal-content input[type="text"], .modal-content input[type="password"] { width: 90%; padding: 8px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px; outline:none; }
         .modal-btns { display: flex; justify-content: space-between; margin-top: 10px; }
-        .modal-btns button { padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .modal-btns button { padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .modal-btns button:hover { opacity: 0.8; }
         
         #confirm-add-btn { background: #128c7e; color: white; }
         #cancel-add-btn { background: #ccc; color: #333; }
@@ -63,7 +64,6 @@
         #confirm-group-btn { background: #e5a935; color: white; }
         #cancel-group-btn { background: #ccc; color: #333; }
 
-        /* 🌟 好友選擇列表的樣式 */
         #group-friend-list {
             max-height: 150px; overflow-y: auto; text-align: left;
             margin: 10px 0; border: 1px solid #eee; padding: 8px; border-radius: 5px;
@@ -83,7 +83,11 @@
             background-color: #075e54; color: white; padding: 10px 15px;
             display: flex; align-items: center; justify-content: space-between; box-shadow: 0 1px 3px rgba(0,0,0,0.1); z-index: 10; height: 40px;
         }
-        .header-left { display: flex; align-items: center; gap: 12px; }
+        
+        /* 🌟 讓頂部的資訊區塊在游標滑過時變成可點擊的樣式 */
+        .header-left { display: flex; align-items: center; gap: 12px; cursor: pointer; padding: 5px 8px; border-radius: 8px; transition: 0.2s; margin-left: -8px; }
+        .header-left:hover { background: rgba(255,255,255,0.15); }
+        
         .profile-pic { font-size: 20px; background: #dfe5e7; color: #555; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;}
         .contact-info { display: flex; flex-direction: column; }
         .contact-name { font-weight: bold; font-size: 16px; }
@@ -135,7 +139,7 @@
 <div id="main-container">
     <div id="sidebar">
         <div class="sidebar-header">
-            <div style="display:flex; align-items:center; gap:10px;">
+            <div id="my-profile-btn" style="display:flex; align-items:center; gap:10px; cursor:pointer; padding:5px; border-radius:5px;" onmouseover="this.style.background='#e0e0e0'" onmouseout="this.style.background='transparent'">
                 <div class="profile-pic" style="width:35px; height:35px; font-size:16px;">👤</div>
                 <div class="contact-name" id="my-name-display">我的名字</div>
             </div>
@@ -158,7 +162,7 @@
 
     <div id="chat-container">
         <div id="chat-header">
-            <div class="header-left">
+            <div class="header-left" id="chat-header-info">
                 <div class="profile-pic" id="chat-header-icon">👥</div>
                 <div class="contact-info">
                     <div class="contact-name" id="chat-header-name">公開聊天室</div>
@@ -205,9 +209,7 @@
             <input type="text" id="new-group-name" placeholder="輸入群組名稱...">
             
             <p style="font-size: 12px; color: #666; margin-bottom: 5px; text-align: left; margin-top: 10px;">選擇要邀請的好友：</p>
-            
-            <div id="group-friend-list">
-                </div>
+            <div id="group-friend-list"></div>
 
             <div class="modal-btns">
                 <button id="cancel-group-btn">取消</button>
@@ -215,11 +217,23 @@
             </div>
         </div>
     </div>
+
+    <div id="info-modal" class="modal-overlay">
+        <div class="modal-content" style="width: 260px;">
+            <div style="font-size: 50px; margin-bottom: 10px;" id="info-icon">👥</div>
+            <h3 id="info-name" style="margin: 0; color: #333;">名稱</h3>
+            <p id="info-status" style="color: #128c7e; font-size: 14px; font-weight: bold; margin-top: 5px;">狀態</p>
+            <div id="info-extra" style="font-size: 13px; color: #555; margin-top: 15px; text-align: left; background: #f4f5f5; padding: 12px; border-radius: 8px; line-height: 1.6;">
+                </div>
+            <button id="close-info-btn" style="margin-top: 15px; background: #e0e0e0; color: #333; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; width: 100%; font-weight: bold; transition: 0.2s;">關閉</button>
+        </div>
+    </div>
 </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
-    import { getFirestore, collection, addDoc, serverTimestamp, onSnapshot, query, orderBy, doc, getDoc, setDoc, updateDoc, arrayUnion } 
+    // 🌟 在這裡多引進了 getDocs，用來掃描群組名單
+    import { getFirestore, collection, addDoc, serverTimestamp, onSnapshot, query, orderBy, doc, getDoc, setDoc, updateDoc, arrayUnion, getDocs } 
         from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -258,13 +272,23 @@
     const confirmAddBtn = document.getElementById('confirm-add-btn');
     const newFriendInput = document.getElementById('new-friend-input');
 
-    // 🌟 群組 DOM 更新
+    // 群組 DOM 
     const createGroupBtn = document.getElementById('create-group-btn');
     const createGroupModal = document.getElementById('create-group-modal');
     const cancelGroupBtn = document.getElementById('cancel-group-btn');
     const confirmGroupBtn = document.getElementById('confirm-group-btn');
     const newGroupName = document.getElementById('new-group-name');
     const groupFriendList = document.getElementById('group-friend-list');
+
+    // 🌟 人物資訊 DOM
+    const infoModal = document.getElementById('info-modal');
+    const closeInfoBtn = document.getElementById('close-info-btn');
+    const infoIcon = document.getElementById('info-icon');
+    const infoName = document.getElementById('info-name');
+    const infoStatus = document.getElementById('info-status');
+    const infoExtra = document.getElementById('info-extra');
+    const chatHeaderInfo = document.getElementById('chat-header-info');
+    const myProfileBtn = document.getElementById('my-profile-btn');
 
     // 聊天室 DOM
     const chatHeaderName = document.getElementById('chat-header-name');
@@ -349,6 +373,82 @@
         loadMessages(); 
     }
 
+    // --- 🌟 顯示人物資訊的邏輯 ---
+    closeInfoBtn.onclick = () => infoModal.style.display = 'none';
+
+    // 點擊聊天室上方的標題列 (對方檔案/群組資訊)
+    chatHeaderInfo.onclick = async () => {
+        infoModal.style.display = 'flex';
+        infoName.innerText = chatHeaderName.innerText;
+        infoIcon.innerText = chatHeaderIcon.innerText;
+        
+        if (currentRoom === "global") {
+            infoStatus.innerText = "🌐 公開大廳";
+            infoExtra.innerHTML = "這是所有人都可以參與的公共空間。<br><br>• 任何人都可以看見訊息。<br>• 請遵守聊天室規範。";
+        } else if (currentRoom.startsWith("group_")) {
+            infoStatus.innerText = "👥 群組聊天";
+            infoExtra.innerHTML = "讀取成員名單中...";
+            try {
+                // 掃描資料庫找出有加入此群組的成員
+                const usersSnap = await getDocs(collection(db, "users"));
+                let membersList = [];
+                usersSnap.forEach(docSnap => {
+                    const userData = docSnap.data();
+                    if (userData.groups && userData.groups.some(g => g.id === currentRoom)) {
+                        membersList.push(docSnap.id);
+                    }
+                });
+                infoExtra.innerHTML = `<strong>群組成員 (${membersList.length} 人)：</strong><br><ul style="margin:8px 0; padding-left:25px;">` + 
+                    membersList.map(m => `<li>${m} ${m===currentUser ? '<span style="color:#128c7e; font-size:11px;">(你)</span>' : ''}</li>`).join('') + 
+                    `</ul><span style="font-size: 10px; color: #aaa;">ID: ${currentRoom}</span>`;
+            } catch(e) {
+                infoExtra.innerHTML = `無法讀取成員名單。<br><br><span style="font-size: 10px; color: #aaa;">ID: ${currentRoom}</span>`;
+            }
+        } else {
+            infoStatus.innerText = "👤 朋友檔案";
+            infoExtra.innerHTML = "讀取資料中...";
+            try {
+                const friendSnap = await getDoc(doc(db, "users", chatHeaderName.innerText));
+                let joinDate = "未知";
+                if (friendSnap.exists() && friendSnap.data().createdAt) {
+                    const date = friendSnap.data().createdAt.toDate();
+                    joinDate = `${date.getFullYear()}/${date.getMonth()+1}/${date.getDate()}`;
+                }
+                infoExtra.innerHTML = `<strong>帳號名稱：</strong> ${chatHeaderName.innerText}<br><br><strong>註冊日期：</strong> ${joinDate}<br><br>這是你與好友的一對一私密聊天室，其他人無法看見。`;
+            } catch(e) {
+                infoExtra.innerHTML = `<strong>帳號：</strong> ${chatHeaderName.innerText}`;
+            }
+        }
+    };
+
+    // 點擊左邊欄自己的頭像
+    myProfileBtn.onclick = async () => {
+        infoModal.style.display = 'flex';
+        infoName.innerText = currentUser;
+        infoIcon.innerText = "👤";
+        infoStatus.innerText = "我的個人檔案";
+        infoExtra.innerHTML = "讀取資料中...";
+
+        try {
+            const mySnap = await getDoc(doc(db, "users", currentUser));
+            let joinDate = "未知";
+            let fCount = 0;
+            let gCount = 0;
+            if (mySnap.exists()) {
+                const data = mySnap.data();
+                if (data.createdAt) {
+                    const date = data.createdAt.toDate();
+                    joinDate = `${date.getFullYear()}/${date.getMonth()+1}/${date.getDate()}`;
+                }
+                fCount = data.friends ? data.friends.length : 0;
+                gCount = data.groups ? data.groups.length : 0;
+            }
+            infoExtra.innerHTML = `<strong>帳號名稱：</strong> ${currentUser}<br><br><strong>註冊日期：</strong> ${joinDate}<br><br><strong>好友數量：</strong> ${fCount} 人<br><strong>加入群組：</strong> ${gCount} 個`;
+        } catch(e) {
+            infoExtra.innerHTML = "無法載入個人資訊。";
+        }
+    };
+
     // --- 加好友邏輯 ---
     addFriendBtn.onclick = () => {
         addFriendModal.style.display = "flex";
@@ -388,7 +488,7 @@
         }
     };
 
-    // --- 🌟 建立群組邏輯 (改為從好友清單選擇) ---
+    // --- 建立群組邏輯 ---
     createGroupBtn.onclick = async () => {
         createGroupModal.style.display = "flex";
         newGroupName.value = "";
@@ -396,18 +496,16 @@
         groupFriendList.innerHTML = "<p style='font-size:12px; color:#999; text-align:center;'>載入好友中...</p>";
 
         try {
-            // 抓取目前登入者的好友資料
             const myRef = doc(db, "users", currentUser);
             const docSnap = await getDoc(myRef);
             
             if (docSnap.exists()) {
                 const friends = docSnap.data().friends || [];
-                groupFriendList.innerHTML = ""; // 清空載入文字
+                groupFriendList.innerHTML = ""; 
                 
                 if (friends.length === 0) {
                     groupFriendList.innerHTML = "<p style='font-size:12px; color:#999; text-align:center; padding:10px 0;'>您還沒有加入任何朋友</p>";
                 } else {
-                    // 把每一個好友變成一個 checkbox
                     friends.forEach(friend => {
                         const div = document.createElement("div");
                         div.className = "group-friend-item";
@@ -420,7 +518,6 @@
                 }
             }
         } catch (error) {
-            console.error("讀取好友失敗", error);
             groupFriendList.innerHTML = "<p style='color:red; font-size:12px;'>載入失敗</p>";
         }
     };
@@ -431,7 +528,6 @@
         const groupName = newGroupName.value.trim();
         if (!groupName) return alert("請輸入群組名稱！");
         
-        // 抓出所有有被打勾的 Checkbox
         const checkboxes = groupFriendList.querySelectorAll("input[type='checkbox']:checked");
         let members = Array.from(checkboxes).map(cb => cb.value);
 
@@ -441,14 +537,10 @@
         confirmGroupBtn.disabled = true;
 
         try {
-            // 把自己也加入成員名單
             members.push(currentUser); 
-
-            // 產生一個專屬的群組 ID
             const groupId = "group_" + Date.now();
             const groupData = { id: groupId, name: groupName };
 
-            // 將這個群組資料一次派發給所有被選中的成員資料庫中
             for (const member of members) {
                 const memberRef = doc(db, "users", member);
                 const memberSnap = await getDoc(memberRef);
@@ -478,7 +570,6 @@
             if (docSnap.exists()) {
                 const data = docSnap.data();
                 
-                // 1. 渲染群組 (放在前面)
                 const groups = data.groups || [];
                 groups.forEach((group) => {
                     const div = document.createElement("div");
@@ -495,7 +586,6 @@
                     friendListContainer.appendChild(div);
                 });
 
-                // 2. 渲染個人好友
                 const friends = data.friends || []; 
                 friends.forEach((friendName) => {
                     const div = document.createElement("div");
