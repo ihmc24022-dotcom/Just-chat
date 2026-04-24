@@ -34,6 +34,14 @@
         .sidebar-header { background: #f0f2f5; padding: 10px 15px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #ddd; height: 40px; }
         .sidebar-header .contact-name { font-weight: bold; color: #333; }
         
+        .header-actions { display: flex; gap: 5px; }
+        
+        #settings-btn { background: #78909c; color: white; border: none; padding: 6px 10px; border-radius: 5px; cursor: pointer; font-size: 12px; font-weight: bold; transition: 0.2s; }
+        #settings-btn:hover { background: #546e7a; }
+        
+        #logout-btn { background: #e53935; color: white; border: none; padding: 6px 12px; border-radius: 5px; cursor: pointer; font-size: 12px; font-weight: bold; }
+        #logout-btn:hover { background: #c62828; }
+
         #contact-list { flex: 1; overflow-y: auto; background: #fff; }
         .contact-item { display: flex; align-items: center; padding: 12px 15px; cursor: pointer; border-bottom: 1px solid #f2f2f2; gap: 12px; transition: 0.2s; }
         .contact-item:hover { background: #f5f6f6; }
@@ -92,9 +100,6 @@
         .contact-name { font-weight: bold; font-size: 16px; }
         .contact-status { font-size: 12px; color: #d1f2eb; margin-top: 2px; }
         
-        #logout-btn { background: #e53935; color: white; border: none; padding: 6px 12px; border-radius: 5px; cursor: pointer; font-size: 12px; font-weight: bold; }
-        #logout-btn:hover { background: #c62828; }
-
         #chat-box { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); background-size: cover;}
         
         .message { max-width: 70%; padding: 10px 15px; border-radius: 15px; background: #fff; border: 1px solid #ddd; word-wrap: break-word; box-shadow: 0 1px 1px rgba(0,0,0,0.05); align-self: flex-start; }
@@ -142,7 +147,10 @@
                 <div class="profile-pic" style="width:35px; height:35px; font-size:16px;">👤</div>
                 <div class="contact-name" id="my-name-display">我的名字</div>
             </div>
-            <button id="logout-btn">登出</button>
+            <div class="header-actions">
+                <button id="settings-btn" title="系統設定">⚙️</button>
+                <button id="logout-btn">登出</button>
+            </div>
         </div>
         
         <div id="contact-list">
@@ -226,6 +234,18 @@
             <button id="close-info-btn" style="margin-top: 10px; background: #e0e0e0; color: #333; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; width: 100%; font-weight: bold; transition: 0.2s;">關閉</button>
         </div>
     </div>
+
+    <div id="settings-modal" class="modal-overlay">
+        <div class="modal-content" style="width: 260px;">
+            <h3 style="margin-top: 5px; color: #333;">⚙️ 系統設定</h3>
+            <div style="font-size: 13px; color: #555; text-align: left; background: #f4f5f5; padding: 12px; border-radius: 8px; line-height: 1.6; margin-bottom: 15px;">
+                <strong>目前版本：</strong> v<span id="settings-version"></span><br>
+                <strong>當前登入：</strong> <span id="settings-account"></span>
+            </div>
+            <p style="font-size: 12px; color: #999; margin-bottom: 15px;">此處未來可擴充更多設定功能<br>(如：切換主題、系統通知等)</p>
+            <button id="close-settings-btn" style="background: #e0e0e0; color: #333; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; width: 100%; font-weight: bold; transition: 0.2s;">關閉</button>
+        </div>
+    </div>
 </div>
 
 <script type="module">
@@ -248,8 +268,8 @@
     const CLOUDINARY_UPLOAD_PRESET = "ml_default";
     const TENOR_API_KEY = "LIVDSRZULELA"; 
 
-    // 🌟 版本控制機制：數字更新為 4 (修復被踢出群組後沒有自動跳出的 Bug)
-    const CLIENT_VERSION = 4; 
+    // 🌟 版本控制機制：數字更新為 5 (新增系統設定按鈕)
+    const CLIENT_VERSION = 5; 
 
     const configRef = doc(db, "system", "config");
     onSnapshot(configRef, (docSnap) => {
@@ -302,6 +322,13 @@
     const chatHeaderInfo = document.getElementById('chat-header-info');
     const myProfileBtn = document.getElementById('my-profile-btn');
     const actionBtn = document.getElementById('action-btn');
+
+    // 🌟 新增：設定視窗的元素
+    const settingsBtn = document.getElementById('settings-btn');
+    const settingsModal = document.getElementById('settings-modal');
+    const closeSettingsBtn = document.getElementById('close-settings-btn');
+    const settingsVersion = document.getElementById('settings-version');
+    const settingsAccount = document.getElementById('settings-account');
 
     const chatHeaderName = document.getElementById('chat-header-name');
     const chatHeaderIcon = document.getElementById('chat-header-icon');
@@ -373,6 +400,17 @@
             localStorage.removeItem("chat_password");
             location.reload(); 
         }
+    });
+
+    // 🌟 綁定設定按鈕事件
+    settingsBtn.addEventListener('click', () => {
+        settingsModal.style.display = 'flex';
+        settingsVersion.innerText = CLIENT_VERSION;
+        settingsAccount.innerText = currentUser;
+    });
+
+    closeSettingsBtn.addEventListener('click', () => {
+        settingsModal.style.display = 'none';
     });
 
     function showApp() {
@@ -663,7 +701,6 @@
         }
     };
 
-    // 🌟 修改這裡：加入了「強制退回大廳」的防護機制
     function loadFriendsAndGroups() {
         const myRef = doc(db, "users", currentUser);
         onSnapshot(myRef, (docSnap) => {
@@ -672,14 +709,14 @@
                 const data = docSnap.data();
                 
                 const groups = data.groups || [];
-                let isCurrentRoomValid = false; // 紀錄目前房間是否合法
+                let isCurrentRoomValid = false; 
 
                 groups.forEach((group) => {
                     const div = document.createElement("div");
                     div.className = "contact-item";
                     if (currentRoom === group.id) {
                         div.classList.add('active');
-                        isCurrentRoomValid = true; // 房間合法（你還在這個群組內）
+                        isCurrentRoomValid = true; 
                     }
 
                     div.innerHTML = `<div class="profile-pic" style="background:#e5a935; color:white; font-size: 16px;">👥</div><div class="contact-name">${group.name}</div>`;
@@ -699,7 +736,7 @@
                     const roomId = [currentUser, friendName].sort().join('_');
                     if (currentRoom === roomId) {
                         div.classList.add('active');
-                        isCurrentRoomValid = true; // 房間合法（你們還是好友）
+                        isCurrentRoomValid = true; 
                     }
 
                     div.innerHTML = `<div class="profile-pic">👤</div><div class="contact-name">${friendName}</div>`;
@@ -712,10 +749,9 @@
                     friendListContainer.appendChild(div);
                 });
 
-                // 🌟 防護機制：如果你不在大廳，而且你目前所在的房間已經消失了（被踢或解散）
                 if (currentRoom !== "global" && !isCurrentRoomValid) {
                     alert("您已被移出該聊天室，或群組已解散。");
-                    globalChatBtn.click(); // 強制切換回公開聊天室
+                    globalChatBtn.click(); 
                     if (infoModal.style.display !== "none") infoModal.style.display = "none";
                 }
             }
