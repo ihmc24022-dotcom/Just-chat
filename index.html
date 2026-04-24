@@ -165,6 +165,38 @@
         .badge { font-size: 10px; padding: 2px 6px; border-radius: 12px; margin-left: 6px; font-weight: bold; }
         .owner-badge { background-color: #ffd700; color: #b8860b; }
         .admin-badge { background-color: #3498db; color: white; }
+                /* 👇 新增：訊息功能相關 CSS */
+        .message-actions { display: flex; gap: 5px; margin-top: 5px; opacity: 0; transition: opacity 0.2s; }
+        .message-container:hover .message-actions { opacity: 1; }
+        .action-btn { background: #128c7e; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; transition: 0.2s; }
+        .action-btn:hover { background: #0d5e52; }
+        .reaction-picker { display: flex; gap: 5px; padding: 5px; background: #f5f5f5; border-radius: 8px; }
+        .reaction-btn { cursor: pointer; font-size: 16px; padding: 2px 6px; border: none; background: white; border-radius: 4px; transition: 0.2s; }
+        .reaction-btn:hover { background: #e0e0e0; transform: scale(1.2); }
+        .reactions-display { display: flex; gap: 3px; flex-wrap: wrap; margin-top: 5px; }
+        .reaction-item { background: #f0f0f0; border: 1px solid #ddd; padding: 2px 6px; border-radius: 12px; font-size: 12px; cursor: pointer; transition: 0.2s; }
+        .reaction-item:hover { background: #e0e0e0; }
+        .edited-label { font-size: 10px; color: #999; margin-left: 5px; font-style: italic; }
+        .typing-indicator { color: #999; font-size: 12px; padding: 10px; font-style: italic; }
+        .read-receipt { font-size: 12px; color: #888; margin-top: 3px; }
+        .tick-single::before { content: "✓"; margin-right: 2px; }
+        .tick-double::before { content: "✓✓"; margin-right: 2px; color: #128c7e; }
+        .pinned-msg { background: #fffacd; padding: 8px; margin-bottom: 10px; border-left: 3px solid #ffd700; border-radius: 4px; font-size: 12px; }
+        .pinned-msg-text { color: #333; }
+        .pinned-msg-label { color: #666; font-size: 10px; }
+        .msg-search-bar { display: flex; gap: 5px; margin-bottom: 10px; }
+        .msg-search-bar input { flex: 1; padding: 6px 10px; border: 1px solid #ddd; border-radius: 4px; }
+        .msg-search-bar button { padding: 6px 12px; background: #128c7e; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .dark-mode { background: #1a1a1a; color: #e0e0e0; }
+        .dark-mode #chat-box { background: #2a2a2a !important; }
+        .dark-mode .message { background: #333; color: #e0e0e0; border: 1px solid #444; }
+        .dark-mode .message.me { background: #1b5e20; }
+        .dark-mode #input-area { background: #2a2a2a; border-color: #444; }
+        .dark-mode #msg-input { background: #333; color: #e0e0e0; border-color: #555; }
+        .voice-btn { position: relative; }
+        .voice-btn.recording { animation: pulse 0.6s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .group-bg-preview { width: 100%; height: 100px; border-radius: 8px; background-size: cover; margin-bottom: 10px; }
     </style>
 </head>
 <body>
@@ -291,6 +323,93 @@
             <button id="close-settings-btn" style="background: #e0e0e0; color: #333; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; width: 100%; font-weight: bold; transition: 0.2s;">關閉</button>
         </div>
     </div>
+        <!-- 👇 新增：訊息反應選擇器 -->
+    <div id="reaction-modal" class="modal-overlay" style="z-index: 60;">
+        <div class="modal-content" style="width: auto; background: transparent; box-shadow: none; padding: 0;">
+            <div style="background: white; padding: 10px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.2);">
+                <div class="reaction-picker">
+                    <span class="reaction-btn" data-emoji="❤️">❤️</span>
+                    <span class="reaction-btn" data-emoji="😂">😂</span>
+                    <span class="reaction-btn" data-emoji="👍">👍</span>
+                    <span class="reaction-btn" data-emoji="😢">😢</span>
+                    <span class="reaction-btn" data-emoji="🔥">🔥</span>
+                    <span class="reaction-btn" data-emoji="🎉">🎉</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 👇 新增：訊息編輯模態 -->
+    <div id="edit-msg-modal" class="modal-overlay">
+        <div class="modal-content" style="width: 300px;">
+            <h3>編輯訊息</h3>
+            <input type="text" id="edit-msg-input" placeholder="編輯訊息內容..." maxlength="200" style="width: 90%; padding: 8px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
+            <div class="modal-btns">
+                <button onclick="document.getElementById('edit-msg-modal').style.display='none'">取消</button>
+                <button id="confirm-edit-btn" style="background: #128c7e; color: white;">確認編輯</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 👇 新增：訊息搜尋 -->
+    <div id="search-modal" class="modal-overlay">
+        <div class="modal-content" style="width: 320px;">
+            <h3>搜尋訊息</h3>
+            <div class="msg-search-bar">
+                <input type="text" id="search-input" placeholder="搜尋關鍵字...">
+                <button onclick="performMessageSearch()">搜尋</button>
+            </div>
+            <div id="search-results" style="max-height: 200px; overflow-y: auto; font-size: 12px;"></div>
+            <button onclick="document.getElementById('search-modal').style.display='none'" style="width: 100%; margin-top: 10px; padding: 8px; background: #e0e0e0; border: none; border-radius: 4px; cursor: pointer;">關閉</button>
+        </div>
+    </div>
+
+    <!-- 👇 新增：群組背景設定 -->
+    <div id="group-bg-modal" class="modal-overlay">
+        <div class="modal-content" style="width: 320px;">
+            <h3>設定群組背景</h3>
+            <input type="text" id="group-bg-url" placeholder="輸入圖片 URL..." style="width: 90%; padding: 8px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
+            <div id="group-bg-preview" class="group-bg-preview" style="background: #f0f0f0;"></div>
+            <div class="modal-btns">
+                <button onclick="document.getElementById('group-bg-modal').style.display='none'">取消</button>
+                <button onclick="setGroupBackground()" style="background: #128c7e; color: white;">套用</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 👇 新增：AI 機器人設定 (僅限群主/管理員) -->
+    <div id="ai-bot-modal" class="modal-overlay">
+        <div class="modal-content" style="width: 320px;">
+            <h3>⚙️ AI 機器人設定</h3>
+            <p style="font-size: 12px; color: #666; margin-bottom: 10px;">僅限群主和管理員設定</p>
+            <label style="font-size: 12px; color: #333; display: block; margin-bottom: 5px;">API 提供商：</label>
+            <select id="ai-provider" style="width: 90%; padding: 6px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px;">
+                <option value="">-- 選擇 --</option>
+                <option value="openai">OpenAI (GPT)</option>
+                <option value="huggingface">Hugging Face</option>
+                <option value="custom">自訂 API</option>
+            </select>
+            <label style="font-size: 12px; color: #333; display: block; margin-bottom: 5px;">API Key：</label>
+            <input type="password" id="ai-api-key" placeholder="輸入 API Key..." style="width: 90%; padding: 8px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
+            <div class="modal-btns">
+                <button onclick="document.getElementById('ai-bot-modal').style.display='none'">取消</button>
+                <button onclick="saveAIBotConfig()" style="background: #128c7e; color: white;">保存設定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 👇 新增：提醒設定 -->
+    <div id="reminder-modal" class="modal-overlay">
+        <div class="modal-content" style="width: 300px;">
+            <h3>設定提醒</h3>
+            <input type="text" id="reminder-text" placeholder="提醒內容..." style="width: 90%; padding: 8px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
+            <input type="number" id="reminder-mins" placeholder="幾分鐘後提醒" min="1" max="1440" value="5" style="width: 90%; padding: 8px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
+            <div class="modal-btns">
+                <button onclick="document.getElementById('reminder-modal').style.display='none'">取消</button>
+                <button onclick="setReminder()" style="background: #128c7e; color: white;">設定</button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script type="module">
@@ -406,6 +525,15 @@
     const gifResultsContainer = document.getElementById('gif-results-container');
 
     const messagesRef = collection(db, "messages");
+        // 👇 新增：新功能變數
+    let currentTheme = localStorage.getItem("chat_theme") || "light";
+    let messageEditingId = null;
+    let typingTimeout = null;
+    let currentPinnedMsg = null;
+    let userStatus = localStorage.getItem("chat_status") || "在線";
+    let groupBackgrounds = {};
+    let aiBotConfig = {};
+    let reminders = [];
 
     const savedUser = localStorage.getItem("chat_username");
     const savedPass = localStorage.getItem("chat_password");
@@ -1203,7 +1331,281 @@
 
     window.showUserInfo = showUserInfo;
     window.removeUserFromGroup = removeUserFromGroup;
+    // 👇 新增：訊息反應功能
+    function addMessageReaction(msgId, emoji) {
+        const msgRef = doc(db, "messages", msgId);
+        getDoc(msgRef).then(snap => {
+            if (snap.exists()) {
+                const reactions = snap.data().reactions || {};
+                reactions[emoji] = reactions[emoji] || [];
+                if (!reactions[emoji].includes(currentUser)) {
+                    reactions[emoji].push(currentUser);
+                    updateDoc(msgRef, { reactions });
+                }
+            }
+        });
+        document.getElementById('reaction-modal').style.display = 'none';
+    }
 
+    // 👇 新增：編輯訊息功能
+    function editMessage(msgId, oldText) {
+        messageEditingId = msgId;
+        document.getElementById('edit-msg-input').value = oldText;
+        document.getElementById('edit-msg-modal').style.display = 'flex';
+        document.getElementById('edit-msg-input').focus();
+    }
+
+    document.getElementById('confirm-edit-btn').onclick = async () => {
+        const newText = document.getElementById('edit-msg-input').value.trim();
+        if (!newText) return alert("訊息不能為空！");
+        try {
+            await updateDoc(doc(db, "messages", messageEditingId), {
+                text: newText,
+                edited: true,
+                editedAt: serverTimestamp()
+            });
+            document.getElementById('edit-msg-modal').style.display = 'none';
+            messageEditingId = null;
+        } catch(e) { alert("編輯失敗"); }
+    };
+
+    // 👇 新增：刪除訊息功能
+    async function deleteMessage(msgId, deleteForAll = false) {
+        if (!confirm("確定要刪除這條訊息嗎？")) return;
+        try {
+            if (deleteForAll) {
+                await updateDoc(doc(db, "messages", msgId), { deleted: true });
+            } else {
+                const userRef = doc(db, "userDeletedMsgs", currentUser);
+                const snap = await getDoc(userRef);
+                const deleted = snap.exists() ? snap.data().msgIds || [] : [];
+                deleted.push(msgId);
+                await setDoc(userRef, { msgIds: deleted });
+            }
+            alert("訊息已刪除");
+        } catch(e) { alert("刪除失敗"); }
+    }
+
+    // 👇 新增：打字指示器
+    function sendTypingIndicator() {
+        if (typingTimeout) clearTimeout(typingTimeout);
+        addDoc(collection(db, "typing"), {
+            user: currentUser,
+            room: currentRoom,
+            timestamp: serverTimestamp()
+        });
+        typingTimeout = setTimeout(() => {
+            // 自動清除
+        }, 2000);
+    }
+
+    msgInput.addEventListener('input', sendTypingIndicator);
+
+    // 👇 新增：訊息搜尋功能
+    function performMessageSearch() {
+        const keyword = document.getElementById('search-input').value.trim();
+        if (!keyword) return alert("請輸入搜尋關鍵字！");
+        
+        const resultsDiv = document.getElementById('search-results');
+        resultsDiv.innerHTML = "搜尋中...";
+        
+        const q = query(messagesRef, orderBy("createdAt", "desc"));
+        getDocs(q).then(snapshot => {
+            let results = [];
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                if (data.text && data.text.includes(keyword) && (data.roomId === currentRoom || data.roomId === "global")) {
+                    results.push({ id: doc.id, ...data });
+                }
+            });
+            
+            if (results.length === 0) {
+                resultsDiv.innerHTML = "<p style='color:#999;'>未找到相關訊息</p>";
+                return;
+            }
+            
+            resultsDiv.innerHTML = results.map(r => `
+                <div style="padding:8px; border-bottom:1px solid #eee; cursor:pointer;" onclick="scrollToMessage('${r.id}')">
+                    <strong>${r.user}:</strong> ${r.text.substring(0, 50)}...<br>
+                    <small style="color:#999;">${new Date(r.createdAt.toDate()).toLocaleString()}</small>
+                </div>
+            `).join('');
+        });
+    }
+
+    function scrollToMessage(msgId) {
+        const msgElement = document.querySelector(`[data-msg-id="${msgId}"]`);
+        if (msgElement) {
+            msgElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            msgElement.style.background = '#ffff99';
+            setTimeout(() => msgElement.style.background = '', 2000);
+        }
+    }
+
+    // 👇 新增：暗黑模式
+    function toggleDarkMode() {
+        currentTheme = currentTheme === "light" ? "dark" : "light";
+        localStorage.setItem("chat_theme", currentTheme);
+        document.body.classList.toggle("dark-mode");
+        localStorage.setItem("chat_theme", currentTheme);
+    }
+
+    if (currentTheme === "dark") {
+        document.body.classList.add("dark-mode");
+    }
+
+    // 👇 新增：群組背景設定
+    async function setGroupBackground() {
+        const url = document.getElementById('group-bg-url').value.trim();
+        if (!url) return alert("請輸入圖片 URL！");
+        
+        try {
+            const groupRef = doc(db, "groupBackgrounds", currentRoom);
+            await setDoc(groupRef, { backgroundUrl: url });
+            groupBackgrounds[currentRoom] = url;
+            chatBox.style.backgroundImage = `url('${url}')`;
+            alert("背景已設定！");
+            document.getElementById('group-bg-modal').style.display = 'none';
+        } catch(e) { alert("設定失敗"); }
+    }
+
+    // 👇 新增：AI 機器人設定
+    async function saveAIBotConfig() {
+        if (!currentGroupOwner && !currentGroupAdmins.includes(currentUser)) {
+            return alert("只有群主和管理員可以設定機器人！");
+        }
+        
+        const provider = document.getElementById('ai-provider').value;
+        const apiKey = document.getElementById('ai-api-key').value;
+        
+        if (!provider || !apiKey) return alert("請填寫所有欄位！");
+        
+        try {
+            const configRef = doc(db, "aiConfigs", currentRoom);
+            await setDoc(configRef, {
+                provider,
+                apiKey: btoa(apiKey), // 簡單加密
+                setBy: currentUser,
+                timestamp: serverTimestamp()
+            });
+            aiB otConfig = { provider, apiKey };
+            alert("機器人設定已保存！");
+            document.getElementById('ai-bot-modal').style.display = 'none';
+        } catch(e) { alert("保存失敗"); }
+    }
+
+    // 👇 新增：提醒功能
+    function setReminder() {
+        const text = document.getElementById('reminder-text').value.trim();
+        const mins = parseInt(document.getElementById('reminder-mins').value);
+        
+        if (!text || !mins) return alert("請填寫所有欄位！");
+        
+        const remindTime = Date.now() + mins * 60000;
+        reminders.push({ text, remindTime });
+        
+        alert(`提醒已設定！將在 ${mins} 分鐘後提醒`);
+        document.getElementById('reminder-modal').style.display = 'none';
+        
+        setTimeout(() => {
+            new Notification("提醒", { body: text });
+        }, mins * 60000);
+    }
+
+    // 👇 新增：檢查提醒
+    setInterval(() => {
+        const now = Date.now();
+        reminders = reminders.filter(r => {
+            if (r.remindTime <= now) {
+                new Notification("Safari 提醒", { body: r.text });
+                return false;
+            }
+            return true;
+        });
+    }, 10000);
+
+    // 👇 新增：讀取收據（打勾）
+    function updateReadReceipts(msgId, readByList) {
+        const tickClass = readByList.length === 1 ? 'tick-single' : 'tick-double';
+        const tickElement = document.querySelector(`[data-msg-id="${msgId}"] .read-receipt`);
+        if (tickElement) {
+            tickElement.className = `read-receipt ${tickClass}`;
+        }
+    }
+
+    // 👇 新增：釘選訊息
+    async function pinMessage(msgId, text) {
+        try {
+            const pinRef = doc(db, "pinnedMessages", currentRoom);
+            await setDoc(pinRef, { msgId, text, pinnedBy: currentUser, timestamp: serverTimestamp() });
+            currentPinnedMsg = { msgId, text };
+            alert("訊息已釘選！");
+        } catch(e) { alert("釘選失敗"); }
+    }
+
+    async function unpinMessage() {
+        try {
+            await deleteDoc(doc(db, "pinnedMessages", currentRoom));
+            currentPinnedMsg = null;
+            alert("釘選已移除！");
+        } catch(e) { alert("移除失敗"); }
+    }
+
+    // 👇 新增：轉發訊息
+    async function forwardMessage(msgText, targetRoom) {
+        try {
+            await addDoc(collection(db, "messages"), {
+                user: currentUser,
+                text: `[轉發自其他聊天室] ${msgText}`,
+                roomId: targetRoom,
+                createdAt: serverTimestamp(),
+                type: "forward"
+            });
+            alert("訊息已轉發！");
+        } catch(e) { alert("轉發失敗"); }
+    }
+
+    // 👇 新增：支持語音訊息錄製
+    let mediaRecorder;
+    let audioChunks = [];
+    
+    async function startVoiceRecord() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(stream);
+            audioChunks = [];
+            
+            mediaRecorder.ondataavailable = event => audioChunks.push(event.data);
+            mediaRecorder.onstop = async () => {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                const url = URL.createObjectURL(audioBlob);
+                
+                // 上傳到 Cloudinary 或直接發送
+                const formData = new FormData();
+                formData.append('file', audioBlob);
+                formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+                
+                const response = await fetch(CLOUDINARY_URL, { method: 'POST', body: formData });
+                const data = await response.json();
+                
+                if (data.secure_url) {
+                    await addDoc(collection(db, "messages"), {
+                        user: currentUser,
+                        voiceUrl: data.secure_url,
+                        roomId: currentRoom,
+                        createdAt: serverTimestamp(),
+                        type: "voice"
+                    });
+                }
+            };
+            
+            mediaRecorder.start();
+        } catch(e) { alert("無法訪問麥克風"); }
+    }
+
+    function stopVoiceRecord() {
+        if (mediaRecorder) mediaRecorder.stop();
+    }
 </script>
 
 </body>
