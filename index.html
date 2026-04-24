@@ -100,7 +100,7 @@
         .message { max-width: 70%; padding: 10px 15px; border-radius: 15px; background: #fff; border: 1px solid #ddd; word-wrap: break-word; box-shadow: 0 1px 1px rgba(0,0,0,0.05); align-self: flex-start; }
         .message.me { align-self: flex-end; background: #dcf8c6; border: none; }
         .message img { max-width: 100%; border-radius: 10px; margin-top: 5px; }
-        .sender-name { font-size: 0.75em; color: #e53935; font-weight: bold; margin-bottom: 4px; cursor: pointer; } /* 加入手勢 */
+        .sender-name { font-size: 0.75em; color: #e53935; font-weight: bold; margin-bottom: 4px; cursor: pointer; }
         .timestamp { font-size: 0.7em; color: #888; text-align: right; margin-top: 5px; }
         
         #input-area { display: flex; padding: 10px; background: #f0f0f0; border-top: 1px solid #ddd; align-items: center; }
@@ -224,7 +224,6 @@
                 </div>
             
             <button id="action-btn" style="display: none; margin-top: 15px; background: #e53935; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; width: 100%; font-weight: bold; transition: 0.2s;">操作按鈕</button>
-            
             <button id="close-info-btn" style="margin-top: 10px; background: #e0e0e0; color: #333; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; width: 100%; font-weight: bold; transition: 0.2s;">關閉</button>
         </div>
     </div>
@@ -264,14 +263,12 @@
     const friendListContainer = document.getElementById('friend-list-container');
     const globalChatBtn = document.getElementById('global-chat-btn');
     
-    // 加好友 DOM
     const addFriendBtn = document.getElementById('add-friend-btn');
     const addFriendModal = document.getElementById('add-friend-modal');
     const cancelAddBtn = document.getElementById('cancel-add-btn');
     const confirmAddBtn = document.getElementById('confirm-add-btn');
     const newFriendInput = document.getElementById('new-friend-input');
 
-    // 群組 DOM 
     const createGroupBtn = document.getElementById('create-group-btn');
     const createGroupModal = document.getElementById('create-group-modal');
     const cancelGroupBtn = document.getElementById('cancel-group-btn');
@@ -279,7 +276,6 @@
     const newGroupName = document.getElementById('new-group-name');
     const groupFriendList = document.getElementById('group-friend-list');
 
-    // 人物資訊 DOM
     const infoModal = document.getElementById('info-modal');
     const closeInfoBtn = document.getElementById('close-info-btn');
     const infoIcon = document.getElementById('info-icon');
@@ -288,11 +284,8 @@
     const infoExtra = document.getElementById('info-extra');
     const chatHeaderInfo = document.getElementById('chat-header-info');
     const myProfileBtn = document.getElementById('my-profile-btn');
-    
-    // 🌟 動作按鈕 DOM (刪除好友/從群組移除)
     const actionBtn = document.getElementById('action-btn');
 
-    // 聊天室 DOM
     const chatHeaderName = document.getElementById('chat-header-name');
     const chatHeaderIcon = document.getElementById('chat-header-icon');
     const chatHeaderStatus = document.getElementById('chat-header-status');
@@ -302,7 +295,6 @@
     const sendBtn = document.getElementById('send-btn');
     const logoutBtn = document.getElementById('logout-btn');
     
-    // GIF DOM
     const gifBtn = document.getElementById('gif-btn');
     const gifModal = document.getElementById('gif-modal');
     const closeGif = document.getElementById('close-gif');
@@ -375,19 +367,66 @@
         loadMessages(); 
     }
 
-    // --- 顯示人物資訊的邏輯 ---
     closeInfoBtn.onclick = () => infoModal.style.display = 'none';
 
+    // 🌟 點擊上方標題的邏輯分流：如果是群組就打開名單，不然就是個人檔案
     chatHeaderInfo.onclick = async () => {
-        showUserInfo(chatHeaderName.innerText, currentRoom);
+        if (currentRoom.startsWith("group_")) {
+            showGroupInfo(chatHeaderName.innerText, currentRoom);
+        } else {
+            showUserInfo(chatHeaderName.innerText, currentRoom);
+        }
     };
 
-    // 🌟 獨立出顯示資訊的函數，因為現在點擊訊息發送者也要能開啟
+    // 🌟 專門顯示【群組資訊與名單】的函數 (內建移除按鈕)
+    async function showGroupInfo(groupName, groupId) {
+        infoModal.style.display = 'flex';
+        infoName.innerText = groupName;
+        infoIcon.innerText = "👥";
+        infoStatus.innerText = "群組成員名單";
+        infoExtra.innerHTML = "讀取成員名單中...";
+        actionBtn.style.display = "none"; // 我們把按鈕做在名單裡面了，所以隱藏底部這個按鈕
+
+        try {
+            const usersSnap = await getDocs(collection(db, "users"));
+            let membersList = [];
+            usersSnap.forEach(docSnap => {
+                const userData = docSnap.data();
+                if (userData.groups && userData.groups.some(g => g.id === groupId)) {
+                    membersList.push(docSnap.id);
+                }
+            });
+
+            // 建立帶有移除按鈕的名單列表
+            let listHtml = `<strong>群組成員 (${membersList.length} 人)：</strong><br>
+                <div style="margin-top:10px; max-height:160px; overflow-y:auto; background:#fff; border:1px solid #ddd; border-radius:5px; padding:5px;">`;
+
+            membersList.forEach(m => {
+                if (m === currentUser) {
+                    listHtml += `<div style="display:flex; justify-content:space-between; align-items:center; padding:8px 5px; border-bottom:1px solid #eee;">
+                        <span style="font-weight:bold;">${m} <span style="color:#128c7e; font-size:11px;">(你)</span></span>
+                    </div>`;
+                } else {
+                    listHtml += `<div style="display:flex; justify-content:space-between; align-items:center; padding:8px 5px; border-bottom:1px solid #eee;">
+                        <span>${m}</span>
+                        <button onclick="removeUserFromGroup('${m}', '${groupId}')" style="background:#e53935; color:white; border:none; border-radius:4px; padding:4px 8px; font-size:12px; cursor:pointer; font-weight:bold;">移除</button>
+                    </div>`;
+                }
+            });
+            listHtml += `</div><span style="font-size: 10px; color: #aaa; display:block; margin-top:10px;">ID: ${groupId}</span>`;
+
+            infoExtra.innerHTML = listHtml;
+
+        } catch(e) {
+            infoExtra.innerHTML = `無法讀取成員名單。<br><br><span style="font-size: 10px; color: #aaa;">ID: ${groupId}</span>`;
+        }
+    }
+
+    // 專門顯示【個人資訊】的函數
     async function showUserInfo(targetUser, roomId) {
         infoModal.style.display = 'flex';
         infoName.innerText = targetUser;
         
-        // 如果點擊的是自己
         if (targetUser === currentUser) {
             infoIcon.innerText = "👤";
             infoStatus.innerText = "我的個人檔案";
@@ -405,13 +444,10 @@
             infoIcon.innerText = "👤";
             infoStatus.innerText = "群組成員";
             infoExtra.innerHTML = `<strong>帳號：</strong> ${targetUser}<br><br>他是此群組的成員。`;
-            
-            // 🌟 顯示「從群組移除」按鈕
             actionBtn.style.display = "block";
             actionBtn.innerText = "🚫 從群組移除";
             actionBtn.onclick = () => removeUserFromGroup(targetUser, roomId);
         } else {
-            // 私人好友
             infoIcon.innerText = "👤";
             infoStatus.innerText = "朋友檔案";
             infoExtra.innerHTML = "讀取好友資料中...";
@@ -434,7 +470,6 @@
         showUserInfo(currentUser, "me");
     };
 
-    // --- 🌟 動作邏輯 1: 刪除好友 ---
     async function deleteFriend(friendName) {
         if (confirm(`確定要刪除好友「${friendName}」嗎？`)) {
             try {
@@ -447,11 +482,10 @@
         }
     }
 
-    // --- 🌟 動作邏輯 2: 從群組移除 ---
+    // 🌟 將人移出群組的邏輯，如果移除成功會自動重新整理名單畫面
     async function removeUserFromGroup(targetName, groupId) {
         if (confirm(`確定要將「${targetName}」從此群組中移除嗎？`)) {
             try {
-                // 從對方的 groups 陣列中移除包含該 ID 的物件
                 const targetRef = doc(db, "users", targetName);
                 const snap = await getDoc(targetRef);
                 if (snap.exists()) {
@@ -462,14 +496,14 @@
                             groups: arrayRemove(groupToRemove)
                         });
                         alert(`已將 ${targetName} 移出群組`);
-                        infoModal.style.display = 'none';
+                        // 如果是透過群組名單移除，自動重新整理名單
+                        showGroupInfo(chatHeaderName.innerText, groupId); 
                     }
                 }
             } catch (e) { alert("移除失敗"); }
         }
     }
 
-    // --- 加好友邏輯 ---
     addFriendBtn.onclick = () => {
         addFriendModal.style.display = "flex";
         newFriendInput.value = "";
@@ -508,7 +542,6 @@
         }
     };
 
-    // --- 建立群組邏輯 ---
     createGroupBtn.onclick = async () => {
         createGroupModal.style.display = "flex";
         newGroupName.value = "";
@@ -582,7 +615,6 @@
         }
     };
 
-    // --- 載入清單 (朋友 + 群組) ---
     function loadFriendsAndGroups() {
         const myRef = doc(db, "users", currentUser);
         onSnapshot(myRef, (docSnap) => {
@@ -676,7 +708,6 @@
         
         let contentHtml = '';
         if (!isMe && data.user && (currentRoom === "global" || currentRoom.startsWith("group_"))) {
-            // 點擊名字顯示資訊
             contentHtml += `<div class="sender-name" onclick="showUserInfo('${data.user}', '${currentRoom}')">${data.user}</div>`;
         }
         if (data.text) {
@@ -767,7 +798,6 @@
         }
     });
 
-    // --- GIF 搜尋與發送邏輯 ---
     async function fetchGifs(queryStr = "hello") {
         gifResultsContainer.innerHTML = '<p style="text-align:center; width:100%; color:#888; font-size:12px; margin-top:20px;">搜尋中...</p>';
         try {
@@ -828,8 +858,9 @@
         }
     });
 
-    // 暴露全域函數給 HTML 使用
+    // 暴露給全域環境讓 HTML onclick 能呼叫
     window.showUserInfo = showUserInfo;
+    window.removeUserFromGroup = removeUserFromGroup;
 
 </script>
 
