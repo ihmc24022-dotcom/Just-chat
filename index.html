@@ -12,31 +12,32 @@
     <link rel="icon" href="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTksRJqnJXEC4r-0r_O-_mMFGU-ndSz5oUwzL54Afj0Sw&s">
 
     <style>
-.message img {
-    max-width: 120px !important;
-    max-height: 120px !important;
-    width: auto !important;
-    height: auto !important;
-    object-fit: contain !important;
-    border-radius: 8px !important;
-}
+        .message img {
+            max-width: 120px !important;
+            max-height: 120px !important;
+            width: auto !important;
+            height: auto !important;
+            object-fit: contain !important;
+            border-radius: 8px !important;
+        }
 
-.message {
-    max-width: 70% !important;
-    word-break: break-word !important;
-    white-space: normal !important;
-}
+        .message {
+            max-width: 70% !important;
+            word-break: break-word !important;
+            white-space: normal !important;
+        }
 
-#input-area {
-    display: flex !important;
-    flex-direction: row !important;
-    flex-wrap: nowrap !important;
-}
+        #input-area {
+            display: flex !important;
+            flex-direction: row !important;
+            flex-wrap: nowrap !important;
+        }
 
-#msg-input {
-    flex: 1 !important;
-    min-width: 80px !important;
-}
+        #msg-input {
+            flex: 1 !important;
+            min-width: 80px !important;
+        }
+        
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #ece5dd; display: flex; justify-content: center; align-items: center; padding: 20px; margin: 0; height: 100vh; box-sizing: border-box; }
         
         #login-screen {
@@ -159,6 +160,11 @@
         .gif-grid { display: flex; flex-wrap: wrap; gap: 6px; height: 200px; overflow-y: auto; justify-content: space-between; }
         .gif-option { width: 48%; height: 80px; cursor: pointer; border-radius: 5px; object-fit: cover; transition: 0.2s; background: #f0f0f0;}
         .gif-option:hover { filter: brightness(0.8); }
+
+        /* 👇 新增：群主與管理員徽章 CSS */
+        .badge { font-size: 10px; padding: 2px 6px; border-radius: 12px; margin-left: 6px; font-weight: bold; }
+        .owner-badge { background-color: #ffd700; color: #b8860b; }
+        .admin-badge { background-color: #3498db; color: white; }
     </style>
 </head>
 <body>
@@ -280,6 +286,7 @@
                     </div>
                     <button id="toggle-notification-btn" style="padding: 4px 8px; background: #128c7e; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">切換</button>
                 </div>
+                <button id="reset-pwd-btn" style="margin-top: 15px; width: 100%; padding: 10px; background-color: #34495e; color: white; border: none; border-radius: 5px; font-size: 14px; font-weight: bold; cursor: pointer;">🔑 重設密碼</button>
             </div>
             <button id="close-settings-btn" style="background: #e0e0e0; color: #333; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; width: 100%; font-weight: bold; transition: 0.2s;">關閉</button>
         </div>
@@ -288,6 +295,8 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
+    // 👇 新增：引入 Firebase Auth 功能
+    import { getAuth, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js"; 
     import { getFirestore, collection, addDoc, serverTimestamp, onSnapshot, query, orderBy, doc, getDoc, setDoc, updateDoc, arrayUnion, getDocs, arrayRemove } 
         from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
 
@@ -302,6 +311,8 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
+    const auth = getAuth(app); // 👇 新增：初始化 Auth 服務
+
     const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/drwflposq/image/upload";
     const CLOUDINARY_UPLOAD_PRESET = "ml_default";
     const TENOR_API_KEY = "LIVDSRZULELA"; 
@@ -328,6 +339,10 @@
     let currentRoom = "global"; 
     let currentRoomMemberCount = 0; 
     let unsubscribeMessages = null;
+
+    // 👇 記錄群組的身份狀態
+    let currentGroupOwner = "";
+    let currentGroupAdmins = [];
 
     // 👇 這是新增的通知計數器
     let unreadNotificationCount = 0;
@@ -503,6 +518,21 @@
 
     closeSettingsBtn.addEventListener('click', () => {
         settingsModal.style.display = 'none';
+    });
+
+    // 👇 新增：重設密碼按鈕的邏輯
+    document.getElementById('reset-pwd-btn').addEventListener('click', () => {
+        const email = prompt("請輸入您的註冊 Email 來發送重設密碼信件：\n(系統將會寄送密碼重設連結到這個信箱)");
+        if (email && email.trim() !== "") {
+            sendPasswordResetEmail(auth, email)
+                .then(() => {
+                    alert("✅ 密碼重設信件已成功寄出！請前往信箱檢查。");
+                    settingsModal.style.display = 'none';
+                })
+                .catch((error) => {
+                    alert("❌ 發送失敗: " + error.message);
+                });
+        }
     });
 
     function showApp() {
@@ -775,7 +805,14 @@
         try {
             members.push(currentUser); 
             const groupId = "group_" + Date.now();
-            const groupData = { id: groupId, name: groupName };
+            
+            // 👇 新增：在建立群組時，記錄 owner 和 admins 資訊
+            const groupData = { 
+                id: groupId, 
+                name: groupName,
+                owner: currentUser,
+                admins: [currentUser]
+            };
 
             for (const member of members) {
                 const memberRef = doc(db, "users", member);
@@ -861,11 +898,15 @@
     };
 
     async function switchRoom(roomId, displayName, icon, status) {
-        unreadNotificationCount = 0; // 👇 切換聊天室時，將未讀數量歸零
+        unreadNotificationCount = 0; 
         currentRoom = roomId;
         chatHeaderName.innerText = displayName;
         chatHeaderIcon.innerText = icon;
         chatHeaderStatus.innerText = status;
+        
+        // 👇 切換聊天室時，重置身份狀態
+        currentGroupOwner = "";
+        currentGroupAdmins = [];
 
         if (roomId === "global") {
             currentRoomMemberCount = 0; 
@@ -873,6 +914,18 @@
         } else if (roomId.startsWith("group_")) {
             currentRoomMemberCount = 999; 
             chatHeaderStatus.innerText = status + " (計算已讀條件中...)";
+            
+            // 👇 讀取該群組的群主和管理員名單
+            const myRef = doc(db, "users", currentUser);
+            const mySnap = await getDoc(myRef);
+            if (mySnap.exists() && mySnap.data().groups) {
+                const groupInfo = mySnap.data().groups.find(g => g.id === roomId);
+                if (groupInfo) {
+                    currentGroupOwner = groupInfo.owner || "";
+                    currentGroupAdmins = groupInfo.admins || [];
+                }
+            }
+
             loadMessages(); 
             
             try {
@@ -915,12 +968,10 @@
 
                         if (isRelevantRoom && data.user !== currentUser) {
                             if (document.hidden || currentRoom !== msgRoom) {
-                                
-                                // 👇 依照你的要求，增加計數並自訂通知文字
                                 unreadNotificationCount++;
 
                                 new Notification(`${unreadNotificationCount} notifications from safari`, {
-                                    body: "Tap to view.", // 簡單的提示文字
+                                    body: "Tap to view.", 
                                     icon: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTksRJqnJXEC4r-0r_O-_mMFGU-ndSz5oUwzL54Afj0Sw&s" 
                                 });
                             }
@@ -977,7 +1028,16 @@
         
         let contentHtml = '';
         if (!isMe && data.user && (currentRoom === "global" || currentRoom.startsWith("group_"))) {
-            contentHtml += `<div class="sender-name" onclick="showUserInfo('${data.user}', '${currentRoom}')">${data.user}</div>`;
+            // 👇 新增：判斷是否為群主或管理員，並顯示徽章
+            let roleHtml = "";
+            if (currentRoom.startsWith("group_")) {
+                if (data.user === currentGroupOwner) {
+                    roleHtml = `<span class="badge owner-badge">👑 Owner</span>`;
+                } else if (currentGroupAdmins.includes(data.user)) {
+                    roleHtml = `<span class="badge admin-badge">🛡️ Admin</span>`;
+                }
+            }
+            contentHtml += `<div class="sender-name" onclick="showUserInfo('${data.user}', '${currentRoom}')">${data.user} ${roleHtml}</div>`;
         }
         if (data.text) {
             contentHtml += `<div>${data.text}</div>`;
