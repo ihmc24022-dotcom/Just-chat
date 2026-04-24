@@ -3,7 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>我的 GitHub 聊天平台</title>
+    <title>我的聊天室</title>
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="我的聊天室">
+    <link rel="apple-touch-icon" href="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTksRJqnJXEC4r-0r_O-_mMFGU-ndSz5oUwzL54Afj0Sw&s">
+    <link rel="icon" href="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTksRJqnJXEC4r-0r_O-_mMFGU-ndSz5oUwzL54Afj0Sw&s">
+
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #ece5dd; display: flex; justify-content: center; align-items: center; padding: 20px; margin: 0; height: 100vh; box-sizing: border-box; }
         
@@ -275,8 +282,8 @@
     const CLOUDINARY_UPLOAD_PRESET = "ml_default";
     const TENOR_API_KEY = "LIVDSRZULELA"; 
 
-    // 🌟 版本更新為 7 (新增通知自訂開關功能)
-    const CLIENT_VERSION = 7; 
+    // 🌟 升級為版本 8，確保載入圖示跟 PWA 設定
+    const CLIENT_VERSION = 8; 
 
     const configRef = doc(db, "system", "config");
     onSnapshot(configRef, (docSnap) => {
@@ -307,7 +314,6 @@
     const friendListContainer = document.getElementById('friend-list-container');
     const globalChatBtn = document.getElementById('global-chat-btn');
     
-    // UI Elements...
     const addFriendBtn = document.getElementById('add-friend-btn');
     const addFriendModal = document.getElementById('add-friend-modal');
     const cancelAddBtn = document.getElementById('cancel-add-btn');
@@ -408,7 +414,6 @@
         }
     });
 
-    // 🌟 更新設定視窗的通知狀態顯示 UI
     function updateNotificationUI() {
         const isLocalEnabled = localStorage.getItem("chat_notifications_enabled") !== "false";
         
@@ -438,7 +443,7 @@
                 toggleNotificationBtn.style.background = "#128c7e";
             }
         } else {
-            settingsNotification.innerText = "瀏覽器不支援";
+            settingsNotification.innerText = "瀏覽器/裝置不支援";
             toggleNotificationBtn.style.display = "none";
         }
     }
@@ -450,16 +455,13 @@
         updateNotificationUI();
     });
 
-    // 🌟 處理開關按鈕點擊事件
     toggleNotificationBtn.addEventListener('click', () => {
         if ("Notification" in window) {
             if (Notification.permission === "default") {
-                // 如果還沒授權，就要求權限
                 Notification.requestPermission().then(permission => {
                     updateNotificationUI();
                 });
             } else if (Notification.permission === "granted") {
-                // 如果已授權，就透過 localStorage 切換開關
                 const isLocalEnabled = localStorage.getItem("chat_notifications_enabled") !== "false";
                 localStorage.setItem("chat_notifications_enabled", isLocalEnabled ? "false" : "true");
                 updateNotificationUI();
@@ -476,7 +478,6 @@
         mainContainer.style.display = "flex";
         myNameDisplay.innerText = currentUser; 
         
-        // 如果瀏覽器還沒授權通知，且使用者沒特別關閉，就預設問一次
         if ("Notification" in window && Notification.permission === "default") {
             const isLocalEnabled = localStorage.getItem("chat_notifications_enabled") !== "false";
             if(isLocalEnabled) {
@@ -868,7 +869,6 @@
         const q = query(messagesRef, orderBy("createdAt", "asc"));
         unsubscribeMessages = onSnapshot(q, (snapshot) => {
             
-            // 🌟 檢查本機設定與瀏覽器權限
             const isLocalEnabled = localStorage.getItem("chat_notifications_enabled") !== "false";
             const canNotify = "Notification" in window && Notification.permission === "granted" && isLocalEnabled;
 
@@ -888,7 +888,7 @@
 
                                 new Notification(`來自 ${data.user} 的訊息 (${roomLabel})`, {
                                     body: data.text || "傳送了一張圖片/GIF",
-                                    icon: "https://cdn-icons-png.flaticon.com/512/3193/3193015.png" 
+                                    icon: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTksRJqnJXEC4r-0r_O-_mMFGU-ndSz5oUwzL54Afj0Sw&s" 
                                 });
                             }
                         }
