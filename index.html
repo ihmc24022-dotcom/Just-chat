@@ -100,7 +100,7 @@
         .message { max-width: 70%; padding: 10px 15px; border-radius: 15px; background: #fff; border: 1px solid #ddd; word-wrap: break-word; box-shadow: 0 1px 1px rgba(0,0,0,0.05); align-self: flex-start; }
         .message.me { align-self: flex-end; background: #dcf8c6; border: none; }
         .message img { max-width: 100%; border-radius: 10px; margin-top: 5px; }
-        .sender-name { font-size: 0.75em; color: #e53935; font-weight: bold; margin-bottom: 4px; }
+        .sender-name { font-size: 0.75em; color: #e53935; font-weight: bold; margin-bottom: 4px; cursor: pointer; } /* 加入手勢 */
         .timestamp { font-size: 0.7em; color: #888; text-align: right; margin-top: 5px; }
         
         #input-area { display: flex; padding: 10px; background: #f0f0f0; border-top: 1px solid #ddd; align-items: center; }
@@ -223,7 +223,7 @@
             <div id="info-extra" style="font-size: 13px; color: #555; margin-top: 15px; text-align: left; background: #f4f5f5; padding: 12px; border-radius: 8px; line-height: 1.6;">
                 </div>
             
-            <button id="delete-friend-btn" style="display: none; margin-top: 15px; background: #e53935; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; width: 100%; font-weight: bold; transition: 0.2s;">🗑️ 刪除好友</button>
+            <button id="action-btn" style="display: none; margin-top: 15px; background: #e53935; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; width: 100%; font-weight: bold; transition: 0.2s;">操作按鈕</button>
             
             <button id="close-info-btn" style="margin-top: 10px; background: #e0e0e0; color: #333; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; width: 100%; font-weight: bold; transition: 0.2s;">關閉</button>
         </div>
@@ -232,7 +232,6 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
-    // 🌟 在這裡多引進了 arrayRemove，用來從陣列中刪除好友
     import { getFirestore, collection, addDoc, serverTimestamp, onSnapshot, query, orderBy, doc, getDoc, setDoc, updateDoc, arrayUnion, getDocs, arrayRemove } 
         from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
 
@@ -290,8 +289,8 @@
     const chatHeaderInfo = document.getElementById('chat-header-info');
     const myProfileBtn = document.getElementById('my-profile-btn');
     
-    // 🌟 刪除好友 DOM
-    const deleteFriendBtn = document.getElementById('delete-friend-btn');
+    // 🌟 動作按鈕 DOM (刪除好友/從群組移除)
+    const actionBtn = document.getElementById('action-btn');
 
     // 聊天室 DOM
     const chatHeaderName = document.getElementById('chat-header-name');
@@ -380,108 +379,95 @@
     closeInfoBtn.onclick = () => infoModal.style.display = 'none';
 
     chatHeaderInfo.onclick = async () => {
+        showUserInfo(chatHeaderName.innerText, currentRoom);
+    };
+
+    // 🌟 獨立出顯示資訊的函數，因為現在點擊訊息發送者也要能開啟
+    async function showUserInfo(targetUser, roomId) {
         infoModal.style.display = 'flex';
-        infoName.innerText = chatHeaderName.innerText;
-        infoIcon.innerText = chatHeaderIcon.innerText;
+        infoName.innerText = targetUser;
         
-        if (currentRoom === "global") {
-            infoStatus.innerText = "🌐 公開大廳";
-            infoExtra.innerHTML = "這是所有人都可以參與的公共空間。<br><br>• 任何人都可以看見訊息。<br>• 請遵守聊天室規範。";
-            deleteFriendBtn.style.display = "none"; // 隱藏刪除按鈕
-        } else if (currentRoom.startsWith("group_")) {
-            infoStatus.innerText = "👥 群組聊天";
-            infoExtra.innerHTML = "讀取成員名單中...";
-            deleteFriendBtn.style.display = "none"; // 隱藏刪除按鈕
-            try {
-                const usersSnap = await getDocs(collection(db, "users"));
-                let membersList = [];
-                usersSnap.forEach(docSnap => {
-                    const userData = docSnap.data();
-                    if (userData.groups && userData.groups.some(g => g.id === currentRoom)) {
-                        membersList.push(docSnap.id);
-                    }
-                });
-                infoExtra.innerHTML = `<strong>群組成員 (${membersList.length} 人)：</strong><br><ul style="margin:8px 0; padding-left:25px;">` + 
-                    membersList.map(m => `<li>${m} ${m===currentUser ? '<span style="color:#128c7e; font-size:11px;">(你)</span>' : ''}</li>`).join('') + 
-                    `</ul><span style="font-size: 10px; color: #aaa;">ID: ${currentRoom}</span>`;
-            } catch(e) {
-                infoExtra.innerHTML = `無法讀取成員名單。<br><br><span style="font-size: 10px; color: #aaa;">ID: ${currentRoom}</span>`;
-            }
+        // 如果點擊的是自己
+        if (targetUser === currentUser) {
+            infoIcon.innerText = "👤";
+            infoStatus.innerText = "我的個人檔案";
+            infoExtra.innerHTML = "這是你自己。";
+            actionBtn.style.display = "none";
+            return;
+        }
+
+        if (roomId === "global") {
+            infoIcon.innerText = "👤";
+            infoStatus.innerText = "使用者資訊";
+            infoExtra.innerHTML = `<strong>帳號：</strong> ${targetUser}<br><br>這是在公開聊天室發現的使用者。`;
+            actionBtn.style.display = "none";
+        } else if (roomId.startsWith("group_")) {
+            infoIcon.innerText = "👤";
+            infoStatus.innerText = "群組成員";
+            infoExtra.innerHTML = `<strong>帳號：</strong> ${targetUser}<br><br>他是此群組的成員。`;
+            
+            // 🌟 顯示「從群組移除」按鈕
+            actionBtn.style.display = "block";
+            actionBtn.innerText = "🚫 從群組移除";
+            actionBtn.onclick = () => removeUserFromGroup(targetUser, roomId);
         } else {
-            infoStatus.innerText = "👤 朋友檔案";
-            infoExtra.innerHTML = "讀取資料中...";
-            deleteFriendBtn.style.display = "block"; // 🌟 顯示刪除好友按鈕
+            // 私人好友
+            infoIcon.innerText = "👤";
+            infoStatus.innerText = "朋友檔案";
+            infoExtra.innerHTML = "讀取好友資料中...";
+            actionBtn.style.display = "block";
+            actionBtn.innerText = "🗑️ 刪除好友";
+            actionBtn.onclick = () => deleteFriend(targetUser);
+
             try {
-                const friendSnap = await getDoc(doc(db, "users", chatHeaderName.innerText));
-                let joinDate = "未知";
+                const friendSnap = await getDoc(doc(db, "users", targetUser));
                 if (friendSnap.exists() && friendSnap.data().createdAt) {
                     const date = friendSnap.data().createdAt.toDate();
-                    joinDate = `${date.getFullYear()}/${date.getMonth()+1}/${date.getDate()}`;
+                    const joinDate = `${date.getFullYear()}/${date.getMonth()+1}/${date.getDate()}`;
+                    infoExtra.innerHTML = `<strong>帳號名稱：</strong> ${targetUser}<br><br><strong>註冊日期：</strong> ${joinDate}<br><br>你與好友的私人空間。`;
                 }
-                infoExtra.innerHTML = `<strong>帳號名稱：</strong> ${chatHeaderName.innerText}<br><br><strong>註冊日期：</strong> ${joinDate}<br><br>這是你與好友的一對一私密聊天室，其他人無法看見。`;
-            } catch(e) {
-                infoExtra.innerHTML = `<strong>帳號：</strong> ${chatHeaderName.innerText}`;
-            }
+            } catch(e) {}
         }
-    };
+    }
 
     myProfileBtn.onclick = async () => {
-        infoModal.style.display = 'flex';
-        infoName.innerText = currentUser;
-        infoIcon.innerText = "👤";
-        infoStatus.innerText = "我的個人檔案";
-        infoExtra.innerHTML = "讀取資料中...";
-        deleteFriendBtn.style.display = "none"; // 隱藏刪除按鈕
-
-        try {
-            const mySnap = await getDoc(doc(db, "users", currentUser));
-            let joinDate = "未知";
-            let fCount = 0;
-            let gCount = 0;
-            if (mySnap.exists()) {
-                const data = mySnap.data();
-                if (data.createdAt) {
-                    const date = data.createdAt.toDate();
-                    joinDate = `${date.getFullYear()}/${date.getMonth()+1}/${date.getDate()}`;
-                }
-                fCount = data.friends ? data.friends.length : 0;
-                gCount = data.groups ? data.groups.length : 0;
-            }
-            infoExtra.innerHTML = `<strong>帳號名稱：</strong> ${currentUser}<br><br><strong>註冊日期：</strong> ${joinDate}<br><br><strong>好友數量：</strong> ${fCount} 人<br><strong>加入群組：</strong> ${gCount} 個`;
-        } catch(e) {
-            infoExtra.innerHTML = "無法載入個人資訊。";
-        }
+        showUserInfo(currentUser, "me");
     };
 
-    // --- 🌟 刪除好友邏輯 ---
-    deleteFriendBtn.onclick = async () => {
-        const friendName = infoName.innerText; // 取得目前畫面上顯示的朋友名字
-        
-        if (confirm(`確定要刪除好友「${friendName}」嗎？這將會把您從對方的好友名單中移除。`)) {
-            deleteFriendBtn.innerText = "刪除中...";
-            deleteFriendBtn.disabled = true;
-            
+    // --- 🌟 動作邏輯 1: 刪除好友 ---
+    async function deleteFriend(friendName) {
+        if (confirm(`確定要刪除好友「${friendName}」嗎？`)) {
             try {
-                const myRef = doc(db, "users", currentUser);
-                const friendRef = doc(db, "users", friendName);
-
-                // 使用 arrayRemove 從陣列中移除對方
-                await updateDoc(myRef, { friends: arrayRemove(friendName) });
-                await updateDoc(friendRef, { friends: arrayRemove(currentUser) });
-                
-                alert(`已成功解除與 ${friendName} 的好友關係！`);
-                infoModal.style.display = 'none'; // 關閉資訊視窗
-                globalChatBtn.click(); // 強制把畫面切換回公開聊天大廳
-                
-            } catch (error) {
-                console.error("刪除好友失敗:", error);
-                alert("刪除失敗，請稍後再試。");
-            } finally {
-                deleteFriendBtn.innerText = "🗑️ 刪除好友";
-                deleteFriendBtn.disabled = false;
-            }
+                await updateDoc(doc(db, "users", currentUser), { friends: arrayRemove(friendName) });
+                await updateDoc(doc(db, "users", friendName), { friends: arrayRemove(currentUser) });
+                alert(`已刪除好友 ${friendName}`);
+                infoModal.style.display = 'none';
+                globalChatBtn.click();
+            } catch (e) { alert("操作失敗"); }
         }
-    };
+    }
+
+    // --- 🌟 動作邏輯 2: 從群組移除 ---
+    async function removeUserFromGroup(targetName, groupId) {
+        if (confirm(`確定要將「${targetName}」從此群組中移除嗎？`)) {
+            try {
+                // 從對方的 groups 陣列中移除包含該 ID 的物件
+                const targetRef = doc(db, "users", targetName);
+                const snap = await getDoc(targetRef);
+                if (snap.exists()) {
+                    const userData = snap.data();
+                    const groupToRemove = userData.groups.find(g => g.id === groupId);
+                    if (groupToRemove) {
+                        await updateDoc(targetRef, {
+                            groups: arrayRemove(groupToRemove)
+                        });
+                        alert(`已將 ${targetName} 移出群組`);
+                        infoModal.style.display = 'none';
+                    }
+                }
+            } catch (e) { alert("移除失敗"); }
+        }
+    }
 
     // --- 加好友邏輯 ---
     addFriendBtn.onclick = () => {
@@ -690,7 +676,8 @@
         
         let contentHtml = '';
         if (!isMe && data.user && (currentRoom === "global" || currentRoom.startsWith("group_"))) {
-            contentHtml += `<div class="sender-name">${data.user}</div>`;
+            // 點擊名字顯示資訊
+            contentHtml += `<div class="sender-name" onclick="showUserInfo('${data.user}', '${currentRoom}')">${data.user}</div>`;
         }
         if (data.text) {
             contentHtml += `<div>${data.text}</div>`;
@@ -840,6 +827,9 @@
             }
         }
     });
+
+    // 暴露全域函數給 HTML 使用
+    window.showUserInfo = showUserInfo;
 
 </script>
 
