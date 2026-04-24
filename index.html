@@ -184,7 +184,7 @@
         <div id="input-area">
             <label for="file-input" class="icon-btn">📎</label>
             <input type="file" id="file-input" accept="image/*">
-            <input type="text" id="msg-input" placeholder="輸入訊息...">
+            <input type="text" id="msg-input" placeholder="輸入訊息... (最多 200 字)" maxlength="200">
             <button id="gif-btn" class="icon-btn" style="font-weight: 800; font-size: 13px; background: #e0e0e0; border-radius: 8px; padding: 6px 10px; display: flex; align-items: center; justify-content: center;">GIF</button>
             <button id="send-btn">發送</button>
         </div>
@@ -248,8 +248,8 @@
     const CLOUDINARY_UPLOAD_PRESET = "ml_default";
     const TENOR_API_KEY = "LIVDSRZULELA"; 
 
-    // 🌟 版本控制機制：每次你更新功能，就把這個數字 +1！
-    const CLIENT_VERSION = 1; 
+    // 🌟 版本控制機制：數字更新為 2
+    const CLIENT_VERSION = 2; 
 
     const configRef = doc(db, "system", "config");
     onSnapshot(configRef, (docSnap) => {
@@ -257,17 +257,12 @@
             const serverVersion = docSnap.data().version;
             
             if (serverVersion > CLIENT_VERSION) {
-                // 如果資料庫的最新版本比用戶當前的網頁新 -> 強制重新整理
                 alert("✨ 開發者更新了新功能！系統將自動為您重新載入以確保最佳體驗。");
-                // location.reload(true) 會強制瀏覽器忽略暫存，重新抓取最新的 HTML/JS
                 window.location.reload(true); 
             } else if (CLIENT_VERSION > serverVersion) {
-                // 如果你（開發者）修改了代碼並把 CLIENT_VERSION 變大，自動更新資料庫！
-                // 這樣其他人的畫面就會觸發上面的重新整理
                 updateDoc(configRef, { version: CLIENT_VERSION });
             }
         } else {
-            // 系統剛建立時的第一次初始化
             setDoc(configRef, { version: CLIENT_VERSION });
         }
     });
@@ -832,6 +827,12 @@
         const text = msgInput.value.trim();
         const file = fileInput.files[0];
         if (!text && !file) return;
+
+        // 🌟 新增字數限制檢查
+        if (text.length > 200) {
+            alert("訊息太長囉！請將字數控制在 200 字以內。");
+            return;
+        }
 
         sendBtn.innerText = "發送中...";
         sendBtn.disabled = true;
