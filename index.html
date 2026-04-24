@@ -240,7 +240,8 @@
             <h3 style="margin-top: 5px; color: #333;">⚙️ 系統設定</h3>
             <div style="font-size: 13px; color: #555; text-align: left; background: #f4f5f5; padding: 12px; border-radius: 8px; line-height: 1.6; margin-bottom: 15px;">
                 <strong>目前版本：</strong> v<span id="settings-version"></span><br>
-                <strong>當前登入：</strong> <span id="settings-account"></span>
+                <strong>當前登入：</strong> <span id="settings-account"></span><br>
+                <strong>系統通知：</strong> <span id="settings-notification" style="color:#128c7e; font-weight:bold;"></span>
             </div>
             <p style="font-size: 12px; color: #999; margin-bottom: 15px;">此處未來可擴充更多設定功能<br>(如：切換主題、系統通知等)</p>
             <button id="close-settings-btn" style="background: #e0e0e0; color: #333; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; width: 100%; font-weight: bold; transition: 0.2s;">關閉</button>
@@ -268,8 +269,8 @@
     const CLOUDINARY_UPLOAD_PRESET = "ml_default";
     const TENOR_API_KEY = "LIVDSRZULELA"; 
 
-    // 🌟 版本控制機制：數字更新為 5 (新增系統設定按鈕)
-    const CLIENT_VERSION = 5; 
+    // 🌟 版本更新為 6 (新增瀏覽器通知功能)
+    const CLIENT_VERSION = 6; 
 
     const configRef = doc(db, "system", "config");
     onSnapshot(configRef, (docSnap) => {
@@ -323,12 +324,12 @@
     const myProfileBtn = document.getElementById('my-profile-btn');
     const actionBtn = document.getElementById('action-btn');
 
-    // 🌟 新增：設定視窗的元素
     const settingsBtn = document.getElementById('settings-btn');
     const settingsModal = document.getElementById('settings-modal');
     const closeSettingsBtn = document.getElementById('close-settings-btn');
     const settingsVersion = document.getElementById('settings-version');
     const settingsAccount = document.getElementById('settings-account');
+    const settingsNotification = document.getElementById('settings-notification');
 
     const chatHeaderName = document.getElementById('chat-header-name');
     const chatHeaderIcon = document.getElementById('chat-header-icon');
@@ -402,11 +403,18 @@
         }
     });
 
-    // 🌟 綁定設定按鈕事件
     settingsBtn.addEventListener('click', () => {
         settingsModal.style.display = 'flex';
         settingsVersion.innerText = CLIENT_VERSION;
         settingsAccount.innerText = currentUser;
+        
+        if ("Notification" in window) {
+            if (Notification.permission === "granted") settingsNotification.innerText = "已啟用";
+            else if (Notification.permission === "denied") settingsNotification.innerText = "已封鎖 (請至瀏覽器設定開啟)";
+            else settingsNotification.innerText = "未設定";
+        } else {
+            settingsNotification.innerText = "不支援此功能";
+        }
     });
 
     closeSettingsBtn.addEventListener('click', () => {
@@ -418,6 +426,17 @@
         mainContainer.style.display = "flex";
         myNameDisplay.innerText = currentUser; 
         
+        // 🌟 新增：向瀏覽器請求推播通知權限
+        if ("Notification" in window) {
+            if (Notification.permission === "default") {
+                Notification.requestPermission().then(permission => {
+                    if (permission === "granted") {
+                        console.log("通知權限已開通！");
+                    }
+                });
+            }
+        }
+
         loadFriendsAndGroups(); 
         switchRoom("global", "公開聊天室", "👥", "大家都在這裡");
     }
@@ -801,8 +820,41 @@
     function loadMessages() {
         if (unsubscribeMessages) unsubscribeMessages();
 
+        let isInitialLoad = true; // 🌟 判斷是不是剛點進聊天室，避免載入舊訊息時瘋狂發通知
+
         const q = query(messagesRef, orderBy("createdAt", "asc"));
         unsubscribeMessages = onSnapshot(q, (snapshot) => {
+            
+            // 🌟 處理瀏覽器通知：當有新訊息加入時
+            if (!isInitialLoad) {
+                snapshot.docChanges().forEach((change) => {
+                    if (change.type === "added") {
+                        const data = change.doc.data();
+                        const msgRoom = data.roomId || "global";
+                        
+                        // 確認這則訊息跟自己有關 (公頻、自己的群組，或自己的私聊)
+                        const isRelevantRoom = msgRoom === "global" || msgRoom.includes(currentUser) || msgRoom.startsWith("group_");
+
+                        if (isRelevantRoom && data.user !== currentUser) {
+                            if ("Notification" in window && Notification.permission === "granted") {
+                                // 如果網頁在背景 (隱藏狀態)，或是訊息來自「你目前不在看的聊天室」，就發出通知
+                                if (document.hidden || currentRoom !== msgRoom) {
+                                    let roomLabel = "私訊";
+                                    if (msgRoom === "global") roomLabel = "公開聊天室";
+                                    else if (msgRoom.startsWith("group_")) roomLabel = "群組訊息";
+
+                                    // 彈出通知小視窗
+                                    new Notification(`來自 ${data.user} 的訊息 (${roomLabel})`, {
+                                        body: data.text || "傳送了一張圖片/GIF",
+                                        icon: "https://cdn-icons-png.flaticon.com/512/3193/3193015.png" // 使用一個對話泡泡當作預設 Icon
+                                    });
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
             chatBox.innerHTML = ''; 
             
             snapshot.forEach((docSnap) => {
@@ -840,6 +892,7 @@
                 }
             });
             chatBox.scrollTop = chatBox.scrollHeight; 
+            isInitialLoad = false; // 舊訊息已經載入完畢，之後進來的都是新訊息
         });
     }
 
