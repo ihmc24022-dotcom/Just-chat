@@ -78,6 +78,11 @@
         .message { max-width: 70%; padding: 10px 15px; border-radius: 15px; background: #fff; border: 1px solid #ddd; word-wrap: break-word; box-shadow: 0 1px 1px rgba(0,0,0,0.05); align-self: flex-start; position: relative; }
         .message.me { align-self: flex-end; background: #dcf8c6; border: none; }
         .message img { max-width: 100%; border-radius: 10px; margin-top: 5px; }
+        
+        /* 👇 貼圖專用 CSS (無框去背感) */
+        .message.is-sticker { background: transparent !important; border: none !important; box-shadow: none !important; padding: 5px 0 !important; }
+        .sticker-img { width: 150px !important; height: 150px !important; object-fit: contain !important; border-radius: 15px !important; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15)); }
+
         .sender-name { font-size: 0.75em; color: #e53935; font-weight: bold; margin-bottom: 4px; cursor: pointer; }
         .timestamp { font-size: 0.7em; color: #888; text-align: right; margin-top: 5px; }
         
@@ -137,6 +142,7 @@
         .dark-mode #chat-box { background-color: #121212 !important; }
         .dark-mode .message { background: #333; color: #e0e0e0; border: 1px solid #444; }
         .dark-mode .message.me { background: #1b5e20; }
+        .dark-mode .message.is-sticker { background: transparent !important; border: none !important; box-shadow: none !important; }
         .dark-mode .sender-name { color: #ff8a80 !important; }
         
         .dark-mode #input-area { background: #1e1e1e; border-color: #333; }
@@ -224,6 +230,7 @@
             <input type="text" id="msg-input" placeholder="輸入訊息... (最多 200 字)" maxlength="200">
             <button id="mic-btn" class="icon-btn voice-btn" onmousedown="startVoiceRecord()" onmouseup="stopVoiceRecord()" ontouchstart="startVoiceRecord()" ontouchend="stopVoiceRecord()">🎤</button>
             <button id="gif-btn" class="icon-btn" style="font-weight: 800; font-size: 13px; background: #e0e0e0; border-radius: 8px; padding: 6px 10px; display: flex; align-items: center; justify-content: center;">GIF</button>
+            <button id="open-sticker-btn" class="icon-btn" style="font-size: 20px;" title="製作貼圖">🤩</button>
             <button id="send-btn">發送</button>
         </div>
     </div>
@@ -265,13 +272,31 @@
         </div>
     </div>
 
+    <div id="sticker-maker-modal" class="modal-overlay" style="z-index: 60;">
+        <div class="modal-content" style="width: 300px;">
+            <h3>自製照片貼圖</h3>
+            <p style="font-size: 12px; color: #666;">選擇照片並決定是否裁切</p>
+            <input type="file" id="sticker-upload" accept="image/*" style="width: 90%; margin: 10px 0;">
+            <div style="margin: 10px 0;">
+                <input type="checkbox" id="sticker-crop-checkbox" onchange="drawStickerPreview()" checked>
+                <label for="sticker-crop-checkbox" style="font-size: 13px;">裁切成正方形</label>
+            </div>
+            <div style="background: #f0f0f0; padding: 10px; border-radius: 8px; margin-bottom: 10px; min-height: 150px; display:flex; justify-content:center; align-items:center;">
+                <canvas id="sticker-preview-canvas" style="max-width: 100%; max-height: 150px; border-radius: 10px;"></canvas>
+            </div>
+            <div class="modal-btns">
+                <button onclick="document.getElementById('sticker-maker-modal').style.display='none'">取消</button>
+                <button id="send-sticker-btn" onclick="sendSticker()" style="background: #128c7e; color: white;">發送貼圖</button>
+            </div>
+        </div>
+    </div>
+
     <div id="info-modal" class="modal-overlay">
         <div class="modal-content" style="width: 280px;">
             <div style="font-size: 50px; margin-bottom: 10px; width: 80px; height: 80px; margin: 0 auto; display: flex; align-items: center; justify-content: center; border-radius: 50%; overflow: hidden; background: #dfe5e7;" id="info-icon">👥</div>
             <h3 id="info-name" style="margin: 10px 0 0 0; color: #333;">名稱</h3>
             <p id="info-status" style="color: #128c7e; font-size: 14px; font-weight: bold; margin-top: 5px;">狀態</p>
-            <div id="info-extra" style="font-size: 13px; color: #555; margin-top: 15px; text-align: left; background: #f4f5f5; padding: 12px; border-radius: 8px; line-height: 1.6;">
-            </div>
+            <div id="info-extra" style="font-size: 13px; color: #555; margin-top: 15px; text-align: left; background: #f4f5f5; padding: 12px; border-radius: 8px; line-height: 1.6;"></div>
             <button id="action-btn" style="display: none; margin-top: 15px; background: #e53935; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; width: 100%; font-weight: bold; transition: 0.2s;">操作按鈕</button>
             <button id="close-info-btn" style="margin-top: 10px; background: #e0e0e0; color: #333; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; width: 100%; font-weight: bold; transition: 0.2s;">關閉</button>
         </div>
@@ -284,14 +309,10 @@
                 <strong>目前版本：</strong> v<span id="settings-version"></span><br>
                 <strong>當前登入：</strong> <span id="settings-account"></span><br>
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 5px;">
-                    <div>
-                        <strong>系統通知：</strong> 
-                        <span id="settings-notification" style="font-weight:bold;"></span>
-                    </div>
+                    <div><strong>系統通知：</strong> <span id="settings-notification" style="font-weight:bold;"></span></div>
                     <button id="toggle-notification-btn" style="padding: 4px 8px; background: #128c7e; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">切換</button>
                 </div>
                 <button onclick="document.getElementById('profile-pic-modal').style.display='flex'; document.getElementById('settings-modal').style.display='none';" style="margin-top: 15px; width: 100%; padding: 10px; background-color: #8e44ad; color: white; border: none; border-radius: 5px; font-size: 14px; font-weight: bold; cursor: pointer;">🖼️ 設定個人頭像</button>
-                
                 <button onclick="document.getElementById('reminder-modal').style.display='flex'; document.getElementById('settings-modal').style.display='none';" style="margin-top: 10px; width: 100%; padding: 10px; background-color: #f39c12; color: white; border: none; border-radius: 5px; font-size: 14px; font-weight: bold; cursor: pointer;">⏰ 設定鬧鐘提醒</button>
                 <button id="reset-pwd-btn" style="margin-top: 10px; width: 100%; padding: 10px; background-color: #34495e; color: white; border: none; border-radius: 5px; font-size: 14px; font-weight: bold; cursor: pointer;">🔑 重設密碼</button>
             </div>
@@ -385,7 +406,7 @@
     const CLOUDINARY_UPLOAD_PRESET = "ml_default";
     const TENOR_API_KEY = "LIVDSRZULELA"; 
 
-    const CLIENT_VERSION = 14; 
+    const CLIENT_VERSION = 15; 
 
     const configRef = doc(db, "system", "config");
     let versionCheckDone = false;
@@ -419,7 +440,10 @@
     let messageEditingId = null;
     let typingTimeout = null;
     let reminders = [];
-    let currentInviteGroupId = null; // 紀錄正在邀請朋友的群組 ID
+    let currentInviteGroupId = null; 
+
+    // 👇 貼圖變數
+    let currentStickerImg = null;
 
     document.addEventListener("visibilitychange", () => {
         if (!document.hidden) unreadNotificationCount = 0;
@@ -656,12 +680,9 @@
             await Promise.all(promises);
             alert("權限更新成功！");
             showGroupInfo(document.getElementById('info-name').innerText, groupId); 
-        } catch (e) {
-            alert("更新權限失敗");
-        }
+        } catch (e) { alert("更新權限失敗"); }
     };
 
-    // 👇 打開「邀請好友」彈出視窗的邏輯
     window.openInviteModal = async function(groupId) {
         currentInviteGroupId = groupId;
         const inviteModal = document.getElementById('invite-group-modal');
@@ -671,7 +692,6 @@
         inviteList.innerHTML = "<p style='font-size:12px; color:#999; text-align:center;'>載入好友中...</p>";
         
         try {
-            // 抓取自己的好友名單
             const myRef = doc(db, "users", currentUser);
             const mySnap = await getDoc(myRef);
             if (!mySnap.exists()) return;
@@ -679,7 +699,6 @@
             const myData = mySnap.data();
             const myFriends = myData.friends || [];
             
-            // 抓取群組目前已有的成員
             const usersSnap = await getDocs(collection(db, "users"));
             let currentMembers = [];
             usersSnap.forEach(docSnap => {
@@ -689,7 +708,6 @@
                 }
             });
             
-            // 過濾掉已經在群組裡的好友
             const availableFriends = myFriends.filter(f => !currentMembers.includes(f));
             
             inviteList.innerHTML = "";
@@ -706,12 +724,9 @@
                     inviteList.appendChild(div);
                 });
             }
-        } catch (e) {
-            inviteList.innerHTML = "<p style='color:red; font-size:12px;'>載入失敗</p>";
-        }
+        } catch (e) { inviteList.innerHTML = "<p style='color:red; font-size:12px;'>載入失敗</p>"; }
     };
 
-    // 👇 確定邀請好友加入群組
     document.getElementById('confirm-invite-btn').onclick = async () => {
         if (!currentInviteGroupId) return;
         
@@ -725,7 +740,6 @@
         btn.disabled = true;
         
         try {
-            // 從自己的群組資料裡複製這份群組資訊給新朋友
             const myRef = doc(db, "users", currentUser);
             const mySnap = await getDoc(myRef);
             const groupData = mySnap.data().groups.find(g => g.id === currentInviteGroupId);
@@ -743,10 +757,8 @@
             await Promise.all(promises);
             alert("邀請成功！");
             document.getElementById('invite-group-modal').style.display = 'none';
-            showGroupInfo(document.getElementById('info-name').innerText, currentInviteGroupId); // 重新整理名單
-        } catch(e) {
-            alert("邀請失敗");
-        } finally {
+            showGroupInfo(document.getElementById('info-name').innerText, currentInviteGroupId); 
+        } catch(e) { alert("邀請失敗"); } finally {
             btn.innerText = "邀請加入";
             btn.disabled = false;
         }
@@ -781,7 +793,6 @@
                 }
             });
 
-            // 👇 這裡加上了「➕ 邀請好友」的按鈕
             let listHtml = `
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
                     <strong>群組成員 (${membersList.length} 人)：</strong>
@@ -1263,6 +1274,9 @@
         const msgDiv = document.createElement('div');
         const isMe = data.user === currentUser; 
         msgDiv.className = `message ${isMe ? "me" : ""}`;
+        if (data.type === "sticker" && !data.deleted) {
+            msgDiv.classList.add("is-sticker");
+        }
         msgDiv.setAttribute('data-msg-id', msgId); 
         
         let contentHtml = '';
@@ -1281,14 +1295,18 @@
         if (data.deleted) {
             contentHtml += `<div style="color: #999; font-style: italic;">此訊息已刪除</div>`;
         } else {
-            if (data.text) {
-                contentHtml += `<div>${data.text} ${data.edited ? '<small style="color:#999; font-size:10px;">(已編輯)</small>' : ''}</div>`;
-            }
-            if (data.imageUrl) {
-                contentHtml += `<img src="${data.imageUrl}" alt="圖片">`;
-            }
-            if (data.voiceUrl) {
-                contentHtml += `<audio controls src="${data.voiceUrl}" style="max-width: 200px; outline: none;"></audio>`;
+            if (data.type === "sticker") {
+                contentHtml += `<img src="${data.imageUrl}" class="sticker-img" alt="貼圖">`;
+            } else {
+                if (data.text) {
+                    contentHtml += `<div>${data.text} ${data.edited ? '<small style="color:#999; font-size:10px;">(已編輯)</small>' : ''}</div>`;
+                }
+                if (data.imageUrl) {
+                    contentHtml += `<img src="${data.imageUrl}" alt="圖片">`;
+                }
+                if (data.voiceUrl) {
+                    contentHtml += `<audio controls src="${data.voiceUrl}" style="max-width: 200px; outline: none;"></audio>`;
+                }
             }
         }
         
@@ -1335,8 +1353,10 @@
         if (!data.deleted) {
             actionsHtml = `<div class="msg-actions" style="font-size: 12px; margin-top: 5px; opacity: 0.7;">`;
             if (isMe) {
-                const safeText = data.text ? data.text.replace(/'/g, "\\'") : "";
-                actionsHtml += `<button onclick="editMessage('${msgId}', '${safeText}')" style="background:none; border:none; color:inherit; cursor:pointer;">✏️</button>`;
+                if (data.type !== "sticker") {
+                    const safeText = data.text ? data.text.replace(/'/g, "\\'") : "";
+                    actionsHtml += `<button onclick="editMessage('${msgId}', '${safeText}')" style="background:none; border:none; color:inherit; cursor:pointer;">✏️</button>`;
+                }
                 actionsHtml += `<button onclick="deleteMessage('${msgId}', true)" style="background:none; border:none; color:inherit; cursor:pointer;">🗑️</button>`;
             } else {
                 actionsHtml += `<button onclick="openReactionModal('${msgId}')" style="background:none; border:none; color:inherit; cursor:pointer;">❤️</button>`;
@@ -1391,6 +1411,93 @@
             btn.disabled = false;
             fileInput.value = "";
         }
+    }
+
+    // 👇 貼圖相關邏輯
+    window.drawStickerPreview = function() {
+        if (!currentStickerImg) return;
+        const canvas = document.getElementById('sticker-preview-canvas');
+        const ctx = canvas.getContext('2d');
+        const isCrop = document.getElementById('sticker-crop-checkbox').checked;
+        
+        let size = Math.min(currentStickerImg.width, currentStickerImg.height);
+        
+        if (isCrop) {
+            canvas.width = size;
+            canvas.height = size;
+            const startX = (currentStickerImg.width - size) / 2;
+            const startY = (currentStickerImg.height - size) / 2;
+            ctx.drawImage(currentStickerImg, startX, startY, size, size, 0, 0, size, size);
+        } else {
+            const MAX = 400;
+            let w = currentStickerImg.width;
+            let h = currentStickerImg.height;
+            if (w > MAX || h > MAX) {
+                const ratio = Math.min(MAX / w, MAX / h);
+                w *= ratio;
+                h *= ratio;
+            }
+            canvas.width = w;
+            canvas.height = h;
+            ctx.drawImage(currentStickerImg, 0, 0, w, h);
+        }
+    }
+
+    window.previewSticker = function(file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            currentStickerImg = new Image();
+            currentStickerImg.onload = window.drawStickerPreview;
+            currentStickerImg.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    document.getElementById('sticker-upload').addEventListener('change', (e) => {
+        if (e.target.files && e.target.files[0]) {
+            window.previewSticker(e.target.files[0]);
+        }
+    });
+
+    document.getElementById('open-sticker-btn').addEventListener('click', () => {
+        document.getElementById('sticker-maker-modal').style.display = 'flex';
+    });
+
+    window.sendSticker = async function() {
+        const canvas = document.getElementById('sticker-preview-canvas');
+        if (!currentStickerImg) return alert("請先選擇照片！");
+        
+        const btn = document.getElementById('send-sticker-btn');
+        btn.innerText = "製作並傳送中...";
+        btn.disabled = true;
+        
+        canvas.toBlob(async (blob) => {
+            try {
+                const url = await uploadImageToCloudinary(blob);
+                if (url) {
+                    await addDoc(messagesRef, {
+                        text: "",
+                        imageUrl: url,
+                        createdAt: serverTimestamp(),
+                        user: currentUser,
+                        roomId: currentRoom,
+                        status: "sent",
+                        type: "sticker",
+                        readBy: [currentUser] 
+                    });
+                    document.getElementById('sticker-maker-modal').style.display = 'none';
+                    document.getElementById('sticker-upload').value = "";
+                    currentStickerImg = null;
+                    const ctx = canvas.getContext('2d');
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                }
+            } catch(e) {
+                alert("貼圖發送失敗");
+            } finally {
+                btn.innerText = "發送貼圖";
+                btn.disabled = false;
+            }
+        }, 'image/png');
     }
 
     sendBtn.addEventListener('click', async () => {
