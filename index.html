@@ -52,7 +52,7 @@
 
         .modal-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 50; }
         .modal-content { background: white; padding: 20px; border-radius: 8px; width: 250px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
-        .modal-content input[type="text"], .modal-content input[type="password"], .modal-content input[type="number"], .modal-content select { width: 90%; padding: 8px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px; outline:none; box-sizing: border-box; }
+        .modal-content input[type="text"], .modal-content input[type="password"], .modal-content input[type="number"], .modal-content select, .modal-content input[type="file"] { width: 90%; padding: 8px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px; outline:none; box-sizing: border-box; }
         .modal-btns { display: flex; justify-content: space-between; margin-top: 10px; }
         .modal-btns button { padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; transition: 0.2s; }
         .modal-btns button:hover { opacity: 0.8; }
@@ -73,7 +73,7 @@
         #chat-header { background-color: #075e54; color: white; padding: 10px 15px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 1px 3px rgba(0,0,0,0.1); z-index: 10; height: 40px; }
         .header-left { display: flex; align-items: center; gap: 12px; cursor: pointer; padding: 5px 8px; border-radius: 8px; transition: 0.2s; margin-left: -8px; }
         .header-left:hover { background: rgba(255,255,255,0.15); }
-        .profile-pic { font-size: 20px; background: #dfe5e7; color: #555; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;}
+        .profile-pic { font-size: 20px; background: #dfe5e7; color: #555; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; overflow: hidden; }
         .contact-info { display: flex; flex-direction: column; }
         .contact-name { font-weight: bold; font-size: 16px; }
         .contact-status { font-size: 12px; color: #d1f2eb; margin-top: 2px; }
@@ -144,8 +144,6 @@
         .voice-btn { position: relative; }
         .voice-btn.recording { animation: pulse 0.6s infinite; color: red; }
         @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1.1); } 50% { opacity: 0.5; transform: scale(1); } }
-        
-        .group-bg-preview { width: 100%; height: 100px; border-radius: 8px; background-size: cover; margin-bottom: 10px; }
     </style>
 </head>
 <body>
@@ -247,8 +245,8 @@
 
     <div id="info-modal" class="modal-overlay">
         <div class="modal-content" style="width: 260px;">
-            <div style="font-size: 50px; margin-bottom: 10px;" id="info-icon">👥</div>
-            <h3 id="info-name" style="margin: 0; color: #333;">名稱</h3>
+            <div style="font-size: 50px; margin-bottom: 10px; width: 80px; height: 80px; margin: 0 auto; display: flex; align-items: center; justify-content: center; border-radius: 50%; overflow: hidden; background: #dfe5e7;" id="info-icon">👥</div>
+            <h3 id="info-name" style="margin: 10px 0 0 0; color: #333;">名稱</h3>
             <p id="info-status" style="color: #128c7e; font-size: 14px; font-weight: bold; margin-top: 5px;">狀態</p>
             <div id="info-extra" style="font-size: 13px; color: #555; margin-top: 15px; text-align: left; background: #f4f5f5; padding: 12px; border-radius: 8px; line-height: 1.6;">
             </div>
@@ -270,11 +268,24 @@
                     </div>
                     <button id="toggle-notification-btn" style="padding: 4px 8px; background: #128c7e; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">切換</button>
                 </div>
-                <button onclick="document.getElementById('group-bg-modal').style.display='flex'; document.getElementById('settings-modal').style.display='none';" style="margin-top: 15px; width: 100%; padding: 10px; background-color: #8e44ad; color: white; border: none; border-radius: 5px; font-size: 14px; font-weight: bold; cursor: pointer;">🖼️ 設定群組背景</button>
+                <button onclick="document.getElementById('profile-pic-modal').style.display='flex'; document.getElementById('settings-modal').style.display='none';" style="margin-top: 15px; width: 100%; padding: 10px; background-color: #8e44ad; color: white; border: none; border-radius: 5px; font-size: 14px; font-weight: bold; cursor: pointer;">🖼️ 設定個人頭像</button>
+                
                 <button onclick="document.getElementById('reminder-modal').style.display='flex'; document.getElementById('settings-modal').style.display='none';" style="margin-top: 10px; width: 100%; padding: 10px; background-color: #f39c12; color: white; border: none; border-radius: 5px; font-size: 14px; font-weight: bold; cursor: pointer;">⏰ 設定鬧鐘提醒</button>
                 <button id="reset-pwd-btn" style="margin-top: 10px; width: 100%; padding: 10px; background-color: #34495e; color: white; border: none; border-radius: 5px; font-size: 14px; font-weight: bold; cursor: pointer;">🔑 重設密碼</button>
             </div>
             <button id="close-settings-btn" style="background: #e0e0e0; color: #333; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; width: 100%; font-weight: bold; transition: 0.2s;">關閉</button>
+        </div>
+    </div>
+
+    <div id="profile-pic-modal" class="modal-overlay">
+        <div class="modal-content" style="width: 300px;">
+            <h3>設定個人頭像</h3>
+            <p style="font-size: 12px; color: #666;">請選擇一張照片作為你的大頭貼</p>
+            <input type="file" id="profile-pic-upload" accept="image/*" style="width: 90%; margin: 10px 0;">
+            <div class="modal-btns">
+                <button onclick="document.getElementById('profile-pic-modal').style.display='none'">取消</button>
+                <button id="save-profile-pic-btn" onclick="setProfilePic()" style="background: #128c7e; color: white;">上傳儲存</button>
+            </div>
         </div>
     </div>
 
@@ -316,18 +327,6 @@
         </div>
     </div>
 
-    <div id="group-bg-modal" class="modal-overlay">
-        <div class="modal-content" style="width: 320px;">
-            <h3>設定群組背景</h3>
-            <input type="text" id="group-bg-url" placeholder="輸入圖片 URL..." style="width: 90%; padding: 8px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
-            <div id="group-bg-preview" class="group-bg-preview" style="background: #f0f0f0;"></div>
-            <div class="modal-btns">
-                <button onclick="document.getElementById('group-bg-modal').style.display='none'">取消</button>
-                <button onclick="setGroupBackground()" style="background: #128c7e; color: white;">套用</button>
-            </div>
-        </div>
-    </div>
-
     <div id="reminder-modal" class="modal-overlay">
         <div class="modal-content" style="width: 300px;">
             <h3>設定提醒</h3>
@@ -364,7 +363,7 @@
     const CLOUDINARY_UPLOAD_PRESET = "ml_default";
     const TENOR_API_KEY = "LIVDSRZULELA"; 
 
-    const CLIENT_VERSION = 10; 
+    const CLIENT_VERSION = 11; 
 
     const configRef = doc(db, "system", "config");
     let versionCheckDone = false;
@@ -398,7 +397,6 @@
     let messageEditingId = null;
     let typingTimeout = null;
     let currentPinnedMsg = null;
-    let groupBackgrounds = {};
     let reminders = [];
 
     document.addEventListener("visibilitychange", () => {
@@ -685,28 +683,34 @@
         infoModal.style.display = 'flex';
         infoName.innerText = targetUser;
         
+        infoIcon.innerHTML = "👤"; // 預設
+
         if (targetUser === currentUser) {
-            infoIcon.innerText = "👤";
+            infoIcon.innerHTML = document.querySelector('#my-profile-btn .profile-pic').innerHTML;
             infoStatus.innerText = "我的個人檔案";
             infoExtra.innerHTML = "這是你自己。";
             actionBtn.style.display = "none";
             return;
         }
 
+        // 讀取好友或對方的頭像
+        getDoc(doc(db, "users", targetUser)).then(snap => {
+            if (snap.exists() && snap.data().profilePic) {
+                infoIcon.innerHTML = `<img src="${snap.data().profilePic}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
+            }
+        });
+
         if (roomId === "global") {
-            infoIcon.innerText = "👤";
             infoStatus.innerText = "使用者資訊";
             infoExtra.innerHTML = `<strong>帳號：</strong> ${targetUser}<br><br>這是在公開聊天室發現的使用者。`;
             actionBtn.style.display = "none";
         } else if (roomId.startsWith("group_")) {
-            infoIcon.innerText = "👤";
             infoStatus.innerText = "群組成員";
             infoExtra.innerHTML = `<strong>帳號：</strong> ${targetUser}<br><br>他是此群組的成員。`;
             actionBtn.style.display = "block";
             actionBtn.innerText = "🚫 從群組移除";
             actionBtn.onclick = () => removeUserFromGroup(targetUser, roomId);
         } else {
-            infoIcon.innerText = "👤";
             infoStatus.innerText = "朋友檔案";
             infoExtra.innerHTML = "讀取好友資料中...";
             actionBtn.style.display = "block";
@@ -878,6 +882,13 @@
             if (docSnap.exists()) {
                 const data = docSnap.data();
                 
+                // 👇 即時更新自己的大頭貼
+                if (data.profilePic) {
+                    document.querySelector('#my-profile-btn .profile-pic').innerHTML = `<img src="${data.profilePic}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
+                } else {
+                    document.querySelector('#my-profile-btn .profile-pic').innerHTML = "👤";
+                }
+
                 const groups = data.groups || [];
                 let isCurrentRoomValid = false; 
 
@@ -906,6 +917,8 @@
                         div.classList.add('active');
                         isCurrentRoomValid = true; 
                     }
+                    
+                    // 這裡可以選擇性載入朋友的大頭貼，為求效能先顯示預設 👤
                     div.innerHTML = `<div class="profile-pic">👤</div><div class="contact-name">${friendName}</div>`;
                     div.onclick = () => {
                         document.querySelectorAll('.contact-item').forEach(el => el.classList.remove('active'));
@@ -934,16 +947,17 @@
         unreadNotificationCount = 0; 
         currentRoom = roomId;
         chatHeaderName.innerText = displayName;
-        chatHeaderIcon.innerText = icon;
         chatHeaderStatus.innerText = status;
         
         currentGroupOwner = "";
         currentGroupAdmins = [];
 
         if (roomId === "global") {
+            chatHeaderIcon.innerText = "👥";
             currentRoomMemberCount = 0; 
             loadMessages();
         } else if (roomId.startsWith("group_")) {
+            chatHeaderIcon.innerText = "👥";
             currentRoomMemberCount = 999; 
             chatHeaderStatus.innerText = status + " (計算已讀條件中...)";
             
@@ -972,6 +986,12 @@
             } catch(e) { chatHeaderStatus.innerText = status; }
         } else {
             currentRoomMemberCount = 2; 
+            chatHeaderIcon.innerText = "👤"; // 私人聊天先放預設，再嘗試抓照片
+            getDoc(doc(db, "users", displayName)).then(snap => {
+                if (snap.exists() && snap.data().profilePic) {
+                    chatHeaderIcon.innerHTML = `<img src="${snap.data().profilePic}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
+                }
+            });
             loadMessages();
         }
     }
@@ -1155,6 +1175,32 @@
         } catch (error) {
             alert("圖片上傳失敗！");
             return null;
+        }
+    }
+
+    // 👇 新增：上傳個人大頭貼的功能
+    window.setProfilePic = async function() {
+        const fileInput = document.getElementById('profile-pic-upload');
+        const file = fileInput.files[0];
+        if (!file) return alert("請選擇一張照片！");
+        
+        const btn = document.getElementById('save-profile-pic-btn');
+        btn.innerText = "上傳中...";
+        btn.disabled = true;
+        
+        try {
+            const url = await uploadImageToCloudinary(file);
+            if (url) {
+                await updateDoc(doc(db, "users", currentUser), { profilePic: url });
+                alert("頭像更新成功！");
+                document.getElementById('profile-pic-modal').style.display = 'none';
+            }
+        } catch(e) {
+            alert("上傳失敗");
+        } finally {
+            btn.innerText = "上傳儲存";
+            btn.disabled = false;
+            fileInput.value = "";
         }
     }
 
@@ -1384,37 +1430,6 @@
 
     if (currentTheme === "dark") {
         document.body.classList.add("dark-mode");
-    }
-
-    window.setGroupBackground = async function() {
-        const url = document.getElementById('group-bg-url').value.trim();
-        if (!url) return alert("請輸入圖片 URL！");
-        try {
-            const groupRef = doc(db, "groupBackgrounds", currentRoom);
-            await setDoc(groupRef, { backgroundUrl: url });
-            groupBackgrounds[currentRoom] = url;
-            chatBox.style.backgroundImage = `url('${url}')`;
-            alert("背景已設定！");
-            document.getElementById('group-bg-modal').style.display = 'none';
-        } catch(e) { alert("設定失敗"); }
-    }
-
-    window.saveAIBotConfig = async function() {
-        if (!currentGroupOwner && !currentGroupAdmins.includes(currentUser)) {
-            return alert("只有群主和管理員可以設定機器人！");
-        }
-        const provider = document.getElementById('ai-provider').value;
-        const apiKey = document.getElementById('ai-api-key').value;
-        if (!provider || !apiKey) return alert("請填寫所有欄位！");
-        
-        try {
-            const configRef = doc(db, "aiConfigs", currentRoom);
-            await setDoc(configRef, {
-                provider, apiKey: btoa(apiKey), setBy: currentUser, timestamp: serverTimestamp()
-            });
-            alert("機器人設定已保存！");
-            document.getElementById('ai-bot-modal').style.display = 'none';
-        } catch(e) { alert("保存失敗"); }
     }
 
     window.setReminder = function() {
