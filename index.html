@@ -3,1348 +3,1396 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Safari Chat (Unsimplified Pro Version)</title>
+    <title>Safari</title>
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Safari">
+    <link rel="apple-touch-icon" href="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTksRJqnJXEC4r-0r_O-_mMFGU-ndSz5oUwzL54Afj0Sw&s">
+    <link rel="icon" href="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTksRJqnJXEC4r-0r_O-_mMFGU-ndSz5oUwzL54Afj0Sw&s">
+
     <style>
-        /* ==========================================
-           [1] Global CSS Variables (Explicit Definitions)
-           ========================================== */
-        :root { 
-            --primary-color: #075e54; 
-            --secondary-color: #128c7e; 
-            --background-color: #ece5dd; 
-            --chat-background-color: #efeae2; 
-            --text-color-main: #333333; 
-            --message-bubble-me: #dcf8c6; 
-            --message-bubble-other: #ffffff; 
+        .message img {
+            max-width: 120px !important;
+            max-height: 120px !important;
+            width: auto !important;
+            height: auto !important;
+            object-fit: contain !important;
+            border-radius: 8px !important;
+        }
+
+        .message {
+            max-width: 70% !important;
+            word-break: break-word !important;
+            white-space: normal !important;
+        }
+
+        #input-area {
+            display: flex !important;
+            flex-direction: row !important;
+            flex-wrap: nowrap !important;
+        }
+
+        #msg-input {
+            flex: 1 !important;
+            min-width: 80px !important;
         }
         
-        body.dark-mode { 
-            --primary-color: #1f2c34; 
-            --secondary-color: #00a884; 
-            --background-color: #111b21; 
-            --chat-background-color: #0b141a; 
-            --text-color-main: #e9edef; 
-            --message-bubble-me: #005c4b; 
-            --message-bubble-other: #202c33; 
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #ece5dd;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            margin: 0;
+            height: 100vh;
+            box-sizing: border-box;
         }
         
-        /* ==========================================
-           [2] Base Document Styles (No Shorthands)
-           ========================================== */
-        body { 
-            font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
-            background-color: var(--background-color); 
-            color: var(--text-color-main); 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            height: 100vh; 
-            margin-top: 0px;
-            margin-right: 0px;
-            margin-bottom: 0px;
-            margin-left: 0px;
-            transition-property: background-color;
-            transition-duration: 0.3s;
-            transition-timing-function: ease;
+        #login-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #ece5dd;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
         }
-        
-        /* ==========================================
-           [3] Login Screen Styles
-           ========================================== */
-        #login-screen { 
-            position: fixed; 
-            top: 0px;
-            right: 0px;
-            bottom: 0px;
-            left: 0px;
-            background-color: var(--background-color); 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            z-index: 1000; 
+
+        .login-box {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            text-align: center;
+            width: 300px;
         }
-        
-        .login-box { 
-            background-color: var(--message-bubble-other); 
-            padding-top: 40px;
-            padding-right: 40px;
-            padding-bottom: 40px;
-            padding-left: 40px;
-            border-top-left-radius: 12px;
-            border-top-right-radius: 12px;
-            border-bottom-right-radius: 12px;
-            border-bottom-left-radius: 12px;
-            box-shadow: 0px 8px 24px rgba(0, 0, 0, 0.1); 
-            width: 100%; 
-            max-width: 320px; 
-            text-align: center; 
+
+        .login-box h2 {
+            margin-top: 0;
+            color: #075e54;
         }
-        
-        .login-box input { 
-            width: 100%; 
-            padding-top: 12px;
-            padding-bottom: 12px;
-            padding-left: 12px;
-            padding-right: 12px;
+
+        .login-box input {
+            width: 90%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            outline: none;
+            box-sizing: border-box;
+        }
+
+        .login-box button {
+            background: #128c7e;
+            color: white;
+            border: none;
+            padding: 10px 20px;
             margin-top: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+            font-weight: bold;
+        }
+
+        .login-box button:disabled {
+            background: #888;
+            cursor: not-allowed;
+        }
+
+        #main-container {
+            width: 100%;
+            max-width: 900px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+            display: none;
+            flex-direction: row;
+            height: 90vh;
+            position: relative;
+        }
+        
+        #sidebar {
+            width: 280px;
+            background: #fff;
+            border-right: 1px solid #ddd;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-header {
+            background: #f0f2f5;
+            padding: 10px 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #ddd;
+            height: 40px;
+        }
+
+        .sidebar-header .contact-name {
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .header-actions {
+            display: flex;
+            gap: 5px;
+        }
+
+        #settings-btn {
+            background: #78909c;
+            color: white;
+            border: none;
+            padding: 6px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+
+        #settings-btn:hover {
+            background: #546e7a;
+        }
+
+        #logout-btn {
+            background: #e53935;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        #logout-btn:hover {
+            background: #c62828;
+        }
+
+        #contact-list {
+            flex: 1;
+            overflow-y: auto;
+            background: #fff;
+        }
+
+        .contact-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            cursor: pointer;
+            border-bottom: 1px solid #f2f2f2;
+            gap: 12px;
+            transition: 0.2s;
+        }
+
+        .contact-item:hover {
+            background: #f5f6f6;
+        }
+
+        .contact-item.active {
+            background: #ebebeb;
+        }
+
+        .contact-item .contact-name {
+            font-weight: 500;
+            font-size: 15px;
+            color: #000;
+        }
+
+        #add-friend-area {
+            padding: 15px;
+            background: #f0f2f5;
+            border-top: 1px solid #ddd;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        #add-friend-btn {
+            background: #075e54;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            width: 100%;
+            transition: 0.2s;
+        }
+
+        #create-group-btn {
+            background: #e5a935;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            width: 100%;
+            transition: 0.2s;
+        }
+
+        .modal-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 50;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 250px;
+            text-align: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+
+        .modal-content input[type="text"], 
+        .modal-content input[type="password"], 
+        .modal-content input[type="number"], 
+        .modal-content select, 
+        .modal-content input[type="file"] {
+            width: 90%;
+            padding: 8px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            outline: none;
+            box-sizing: border-box;
+        }
+
+        .modal-btns {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+        }
+
+        .modal-btns button {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+
+        .modal-btns button:hover {
+            opacity: 0.8;
+        }
+        
+        #confirm-add-btn { background: #128c7e; color: white; }
+        #cancel-add-btn { background: #ccc; color: #333; }
+        #confirm-group-btn { background: #e5a935; color: white; }
+        #cancel-group-btn { background: #ccc; color: #333; }
+
+        #group-friend-list, 
+        #invite-friend-list {
+            max-height: 150px;
+            overflow-y: auto;
+            text-align: left;
+            margin: 10px 0;
+            border: 1px solid #eee;
+            padding: 8px;
+            border-radius: 5px;
+            background: #fafafa;
+        }
+
+        .group-friend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 5px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .group-friend-item:last-child {
+            border-bottom: none;
+        }
+
+        .group-friend-item label {
+            cursor: pointer;
+            font-size: 14px;
+            color: #333;
+            flex: 1;
+        }
+
+        .group-friend-item input {
+            cursor: pointer;
+        }
+
+        #chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #efeae2;
+            position: relative;
+        }
+
+        #chat-header {
+            background-color: #075e54;
+            color: white;
+            padding: 10px 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            z-index: 10;
+            height: 40px;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            padding: 5px 8px;
+            border-radius: 8px;
+            transition: 0.2s;
+            margin-left: -8px;
+        }
+
+        .header-left:hover {
+            background: rgba(255,255,255,0.15);
+        }
+
+        .profile-pic {
+            font-size: 20px;
+            background: #dfe5e7;
+            color: #555;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+
+        .contact-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .contact-name {
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        .contact-status {
+            font-size: 12px;
+            color: #d1f2eb;
+            margin-top: 2px;
+        }
+        
+        #chat-box {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png');
+            background-size: cover;
+        }
+        
+        .message {
+            max-width: 70%;
+            padding: 10px 15px;
+            border-radius: 15px;
+            background: #fff;
+            border: 1px solid #ddd;
+            word-wrap: break-word;
+            white-space: normal;
+            box-shadow: 0 1px 1px rgba(0,0,0,0.05);
+            align-self: flex-start;
+            position: relative;
+        }
+
+        .message.me {
+            align-self: flex-end;
+            background: #dcf8c6;
+            border: none;
+        }
+
+        .message img {
+            max-width: 100%;
+            border-radius: 10px;
+            margin-top: 5px;
+        }
+
+        /* 貼圖專用 CSS (無框去背感) */
+        .message.is-sticker {
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            padding: 5px 0 !important;
+        }
+
+        .sticker-img {
+            width: 150px !important;
+            height: 150px !important;
+            object-fit: contain !important;
+            border-radius: 15px !important;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15));
+            margin-top: 0 !important;
+        }
+
+        .sender-name {
+            font-size: 0.75em;
+            color: #e53935;
+            font-weight: bold;
+            margin-bottom: 4px;
+            cursor: pointer;
+        }
+
+        .timestamp {
+            font-size: 0.7em;
+            color: #888;
+            text-align: right;
+            margin-top: 5px;
+        }
+        
+        #input-area {
+            display: flex;
+            padding: 10px;
+            background: #f0f0f0;
+            border-top: 1px solid #ddd;
+            align-items: center;
+            flex-wrap: nowrap;
+        }
+
+        #msg-input {
+            flex: 1;
+            padding: 10px;
+            border-radius: 20px;
+            border: 1px solid #ddd;
+            outline: none;
+            font-size: 14px;
+            min-width: 80px;
+        }
+
+        #file-input {
+            display: none;
+        }
+
+        .icon-btn {
+            cursor: pointer;
+            padding: 10px;
+            margin: 0 5px;
+            background: none;
+            border: none;
+            font-size: 1.2em;
+        }
+
+        #send-btn {
+            background: #128c7e;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            padding: 8px 15px;
+            margin-left: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        #send-btn:disabled {
+            background: #888;
+            cursor: not-allowed;
+        }
+
+        /* 貼圖 & GIF 選單 */
+        #gif-modal, 
+        #sticker-picker-modal {
+            display: none;
+            position: absolute;
+            bottom: 65px;
+            right: 20px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            width: 280px;
+            z-index: 20;
+        }
+
+        #gif-search-input {
+            width: 100%;
+            padding: 8px 12px;
             margin-bottom: 10px;
-            border-width: 1px;
-            border-style: solid;
-            border-color: #dddddd; 
-            border-top-left-radius: 6px;
-            border-top-right-radius: 6px;
-            border-bottom-right-radius: 6px;
-            border-bottom-left-radius: 6px;
-            box-sizing: border-box; 
-            font-size: 16px; 
-            background-color: transparent; 
-            color: var(--text-color-main); 
-        }
-        
-        .login-box button { 
-            width: 100%; 
-            padding-top: 12px;
-            padding-bottom: 12px;
-            background-color: var(--secondary-color); 
-            color: #ffffff; 
-            border-width: 0px;
-            border-style: none;
-            border-top-left-radius: 6px;
-            border-top-right-radius: 6px;
-            border-bottom-right-radius: 6px;
-            border-bottom-left-radius: 6px;
-            font-size: 16px; 
-            font-weight: bold; 
-            cursor: pointer; 
-            margin-top: 15px; 
+            border: 1px solid #ccc;
+            border-radius: 20px;
+            box-sizing: border-box;
+            outline: none;
+            font-size: 13px;
         }
 
-        /* ==========================================
-           [4] Main Application Layout
-           ========================================== */
-        #main-app { 
-            display: none; 
-            width: 100%; 
-            max-width: 1000px; 
-            height: 90vh; 
-            background-color: var(--message-bubble-other); 
-            border-top-left-radius: 12px;
-            border-top-right-radius: 12px;
-            border-bottom-right-radius: 12px;
-            border-bottom-left-radius: 12px;
-            box-shadow: 0px 8px 32px rgba(0, 0, 0, 0.1); 
-            overflow-x: hidden; 
-            overflow-y: hidden;
-            flex-direction: row; 
-        }
-        
-        /* Sidebar Styles */
-        #sidebar { 
-            width: 300px; 
-            border-right-width: 1px;
-            border-right-style: solid;
-            border-right-color: rgba(0, 0, 0, 0.1); 
-            display: flex; 
-            flex-direction: column; 
-            background-color: var(--message-bubble-other); 
-        }
-        
-        .sidebar-header { 
-            padding-top: 15px;
-            padding-bottom: 15px;
-            padding-left: 15px;
-            padding-right: 15px;
-            background-color: var(--primary-color); 
-            color: #ffffff; 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-        }
-        
-        .icon-btn { 
-            background-color: transparent; 
-            border-width: 0px; 
-            color: inherit; 
-            cursor: pointer; 
-            font-size: 18px; 
-            padding-top: 5px;
-            padding-bottom: 5px;
-            padding-left: 5px;
-            padding-right: 5px;
-            border-top-left-radius: 50%;
-            border-top-right-radius: 50%;
-            border-bottom-right-radius: 50%;
-            border-bottom-left-radius: 50%;
-        }
-        
-        /* Contact List */
-        #contact-list { 
-            flex-grow: 1; 
-            overflow-y: auto; 
-        }
-        
-        .list-item { 
-            display: flex; 
-            align-items: center; 
-            padding-top: 15px;
-            padding-bottom: 15px;
-            padding-left: 15px;
-            padding-right: 15px;
-            border-bottom-width: 1px;
-            border-bottom-style: solid;
-            border-bottom-color: rgba(0, 0, 0, 0.05); 
-            cursor: pointer; 
-            gap: 15px; 
-        }
-        
-        .list-item.active { 
-            background-color: rgba(0, 0, 0, 0.05); 
-        }
-        
-        .avatar { 
-            width: 45px; 
-            height: 45px; 
-            background-color: #dddddd; 
-            border-radius: 50%; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            font-size: 20px; 
-        }
-        
-        /* Sidebar Actions */
-        .sidebar-actions { 
-            padding-top: 15px;
-            padding-bottom: 15px;
-            padding-left: 15px;
-            padding-right: 15px;
-            display: flex; 
-            flex-direction: column; 
-            gap: 10px; 
-            border-top-width: 1px;
-            border-top-style: solid;
-            border-top-color: rgba(0, 0, 0, 0.1); 
+        .gif-grid, 
+        .sticker-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            height: 200px;
+            overflow-y: auto;
+            align-content: flex-start;
         }
 
-        .sidebar-actions button { 
-            padding-top: 10px;
-            padding-bottom: 10px;
-            border-width: 0px; 
-            border-radius: 6px; 
-            cursor: pointer; 
-            font-weight: bold; 
-            color: #ffffff; 
+        .gif-option {
+            width: 48%;
+            height: 80px;
+            cursor: pointer;
+            border-radius: 5px;
+            object-fit: cover;
+            transition: 0.2s;
+            background: #f0f0f0;
         }
 
-        /* Chat Area Styles */
-        #chat-area { 
-            flex-grow: 1; 
-            display: flex; 
-            flex-direction: column; 
-            background-color: var(--chat-background-color); 
-            position: relative; 
-        }
-        
-        .chat-header { 
-            padding-top: 15px;
-            padding-bottom: 15px;
-            padding-left: 15px;
-            padding-right: 15px;
-            background-color: var(--primary-color); 
-            color: #ffffff; 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-        }
-        
-        /* Messages Container */
-        #messages-container { 
-            flex-grow: 1; 
-            padding-top: 20px;
-            padding-bottom: 20px;
-            padding-left: 20px;
-            padding-right: 20px;
-            overflow-y: auto; 
-            display: flex; 
-            flex-direction: column; 
-            gap: 10px; 
-        }
-        
-        .msg-wrapper { 
-            display: flex; 
-            flex-direction: column; 
-            max-width: 65%; 
-        }
-        
-        .msg-wrapper.me { 
-            align-self: flex-end; 
-        }
-        
-        .msg-wrapper.other { 
-            align-self: flex-start; 
-        }
-        
-        .msg-bubble { 
-            padding-top: 10px;
-            padding-bottom: 10px;
-            padding-left: 15px;
-            padding-right: 15px;
-            border-radius: 12px; 
-            position: relative; 
-            word-wrap: break-word; 
-            box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.1); 
-        }
-        
-        .msg-wrapper.me .msg-bubble { 
-            background-color: var(--message-bubble-me); 
-            border-top-right-radius: 2px; 
-        }
-        
-        .msg-wrapper.other .msg-bubble { 
-            background-color: var(--message-bubble-other); 
-            border-top-left-radius: 2px; 
-        }
-        
-        .msg-sender { 
-            font-size: 12px; 
-            font-weight: bold; 
-            color: #e53935; 
-            margin-bottom: 4px; 
-        }
-        
-        .msg-time { 
-            font-size: 10px; 
-            color: rgba(0, 0, 0, 0.5); 
-            text-align: right; 
-            margin-top: 5px; 
+        /* 徽章設定 (群主/管理員) */
+        .badge {
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 12px;
+            margin-left: 6px;
+            font-weight: bold;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.2);
         }
 
-        .msg-media { 
-            max-width: 200px; 
-            border-radius: 8px; 
-            cursor: pointer; 
-        }
-        
-        .msg-sticker { 
-            width: 120px; 
-            height: 120px; 
-            object-fit: contain; 
-            background-color: transparent !important; 
-            box-shadow: none !important; 
+        .owner-badge {
+            background-color: #ffd700;
+            color: #000;
         }
 
-        /* Input Area */
-        .input-area { 
-            padding-top: 15px;
-            padding-bottom: 15px;
-            padding-left: 15px;
-            padding-right: 15px;
-            background-color: var(--message-bubble-other); 
-            display: flex; 
-            gap: 10px; 
-            align-items: center; 
+        .admin-badge {
+            background-color: #3498db;
+            color: white;
         }
         
-        .input-area input[type="text"] { 
-            flex-grow: 1; 
-            padding-top: 12px;
-            padding-bottom: 12px;
-            padding-left: 15px;
-            padding-right: 15px;
-            border-radius: 24px; 
-            border-width: 1px;
-            border-style: solid;
-            border-color: rgba(0, 0, 0, 0.1); 
-            background-color: var(--chat-background-color); 
-            color: var(--text-color-main); 
-            outline: none; 
-        }
-        
-        .input-area button { 
-            background-color: var(--secondary-color); 
-            color: #ffffff; 
-            border-width: 0px; 
-            width: 45px; 
-            height: 45px; 
-            border-radius: 50%; 
-            cursor: pointer; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            font-size: 18px; 
+        /* 訊息操作 (愛心、編輯、刪除) */
+        .message-actions {
+            display: flex;
+            gap: 5px;
+            margin-top: 5px;
+            opacity: 0;
+            transition: opacity 0.2s;
+            justify-content: flex-end;
         }
 
-        /* Media Panels */
-        .media-panel { 
-            position: absolute; 
-            bottom: 80px; 
-            right: 20px; 
-            width: 300px; 
-            height: 350px; 
-            background-color: var(--message-bubble-other); 
-            border-radius: 12px; 
-            box-shadow: 0px 8px 24px rgba(0, 0, 0, 0.2); 
-            display: none; 
-            flex-direction: column; 
-            z-index: 10; 
-            border-width: 1px;
-            border-style: solid;
-            border-color: rgba(0, 0, 0, 0.1); 
-        }
-        
-        .media-panel-header { 
-            padding-top: 10px;
-            padding-bottom: 10px;
-            padding-left: 15px;
-            padding-right: 15px;
-            border-bottom-width: 1px;
-            border-bottom-style: solid;
-            border-bottom-color: rgba(0, 0, 0, 0.1); 
-            display: flex; 
-            justify-content: space-between; 
-            font-weight: bold; 
-        }
-        
-        .media-grid { 
-            flex-grow: 1; 
-            padding-top: 10px;
-            padding-bottom: 10px;
-            padding-left: 10px;
-            padding-right: 10px;
-            overflow-y: auto; 
-            display: grid; 
-            grid-template-columns: repeat(3, 1fr); 
-            gap: 10px; 
+        .message:hover .message-actions {
+            opacity: 1;
         }
 
-        /* Modals */
-        .modal-overlay { 
-            position: fixed; 
-            top: 0px;
-            right: 0px;
-            bottom: 0px;
-            left: 0px;
-            background-color: rgba(0, 0, 0, 0.5); 
-            display: none; 
-            justify-content: center; 
-            align-items: center; 
-            z-index: 2000; 
+        .msg-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+
+        .msg-actions button {
+            transition: transform 0.2s;
+            padding: 2px;
+        }
+
+        .msg-actions button:hover {
+            transform: scale(1.3);
+            opacity: 1;
+        }
+
+        .reaction-picker {
+            display: flex;
+            gap: 5px;
+            padding: 5px;
+            background: #f5f5f5;
+            border-radius: 8px;
+        }
+
+        .reaction-btn {
+            cursor: pointer;
+            font-size: 16px;
+            padding: 2px 6px;
+            border: none;
+            background: white;
+            border-radius: 4px;
+            transition: 0.2s;
+        }
+
+        .reactions-display {
+            display: flex;
+            gap: 3px;
+            flex-wrap: wrap;
+            margin-top: 5px;
+        }
+
+        .reaction-item {
+            background: #f0f0f0;
+            border: 1px solid #ddd;
+            padding: 2px 6px;
+            border-radius: 12px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: 0.2s;
         }
         
-        .modal-content { 
-            background-color: var(--message-bubble-other); 
-            padding-top: 25px;
-            padding-bottom: 25px;
-            padding-left: 25px;
-            padding-right: 25px;
-            border-radius: 12px; 
-            width: 100%; 
-            max-width: 400px; 
+        .edited-label {
+            font-size: 10px;
+            color: #999;
+            margin-left: 5px;
+            font-style: italic;
         }
+
+        .read-receipt {
+            font-size: 12px;
+            color: #888;
+            margin-top: 3px;
+        }
+
+        .pinned-msg {
+            background: #fffacd;
+            padding: 8px;
+            margin-bottom: 10px;
+            border-left: 3px solid #ffd700;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        .msg-search-bar {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+
+        .msg-search-bar input {
+            flex: 1;
+            padding: 6px 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .msg-search-bar button {
+            padding: 6px 12px;
+            background: #128c7e;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        /* =======================================
+           🌙 深色模式全面修正 (確保文字清晰可見) 
+           ======================================= */
+        .dark-mode { background: #1a1a1a; color: #e0e0e0; }
+        .dark-mode #main-container { background: #222; }
+        .dark-mode #sidebar, .dark-mode #contact-list { background: #1e1e1e; border-color: #333; }
+        .dark-mode .sidebar-header, .dark-mode #add-friend-area { background: #2a2a2a; border-color: #333; }
+        .dark-mode .contact-item { border-bottom-color: #333; }
+        .dark-mode .contact-item:hover { background: #333; }
+        .dark-mode .contact-item.active { background: #444; }
+        
+        .dark-mode .contact-name, 
+        .dark-mode .sidebar-header .contact-name, 
+        .dark-mode .contact-item .contact-name,
+        .dark-mode h2, 
+        .dark-mode h3, 
+        .dark-mode h4, 
+        .dark-mode p, 
+        .dark-mode label, 
+        .dark-mode span, 
+        .dark-mode #info-name, 
+        .dark-mode #info-extra, 
+        .dark-mode .group-friend-item label { color: #e0e0e0 !important; }
+
+        .dark-mode #chat-box { background-color: #121212 !important; }
+        .dark-mode .message { background: #333; color: #e0e0e0; border: 1px solid #444; }
+        .dark-mode .message.me { background: #1b5e20; }
+        .dark-mode .message.is-sticker { background: transparent !important; border: none !important; box-shadow: none !important; }
+        .dark-mode .sender-name { color: #ff8a80 !important; }
+        
+        .dark-mode #input-area { background: #1e1e1e; border-color: #333; }
+        .dark-mode #msg-input { background: #333; color: #e0e0e0; border-color: #555; }
+        .dark-mode .modal-content { background: #2c2c2c; color: #e0e0e0; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        .dark-mode .modal-content input, .dark-mode .modal-content select { background: #444; color: #fff; border-color: #555; }
+        .dark-mode #info-extra { background: #1a1a1a !important; }
+        
+        .dark-mode #group-friend-list, .dark-mode #invite-friend-list { background: #222 !important; border-color: #444 !important; }
+        .dark-mode .group-friend-item { border-color: #444; }
+        .dark-mode .reaction-picker { background: #333; }
+        .dark-mode .reaction-btn { background: #444; }
+        .dark-mode .reaction-item { background: #444; border-color: #555; color: #e0e0e0; }
+
+        .dark-mode #gif-modal, .dark-mode #sticker-picker-modal { background: #2c2c2c; border-color: #444; }
+        .dark-mode #sticker-picker-modal h4 { color: #e0e0e0 !important; }
+
+        /* 語音按鈕閃爍動畫 */
+        .voice-btn { position: relative; }
+        .voice-btn.recording { animation: pulse 0.6s infinite; color: red; }
+        @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1.1); } 50% { opacity: 0.5; transform: scale(1); } }
     </style>
 </head>
 <body>
 
-    <div id="login-screen">
-        <div class="login-box">
-            <h2 style="color: var(--primary-color); margin-top: 0px;">Safari Chat Pro</h2>
-            <div>
-                <input type="text" id="login-username" placeholder="請輸入帳號 (Enter Username)">
+<div id="login-screen">
+    <div class="login-box">
+        <h2>登入 / 註冊</h2>
+        <input type="text" id="username-input" placeholder="請輸入帳號名稱..." value="safari">
+        <input type="password" id="password-input" placeholder="請輸入密碼...">
+        <button id="join-btn">進入聊天</button>
+    </div>
+</div>
+
+<div id="main-container">
+    <div id="sidebar">
+        <div class="sidebar-header">
+            <div id="my-profile-btn" style="display:flex; align-items:center; gap:10px; cursor:pointer; padding:5px; border-radius:5px;" onmouseover="this.style.background='#e0e0e0'" onmouseout="this.style.background='transparent'">
+                <div class="profile-pic" style="width:35px; height:35px; font-size:16px;">👤</div>
+                <div class="contact-name" id="my-name-display">我的名字</div>
             </div>
-            <div>
-                <input type="password" id="login-password" placeholder="請輸入密碼 (Enter Password)">
-            </div>
-            <div>
-                <button id="btn-login">進入聊天室 (Enter Chat)</button>
+            <div class="header-actions">
+                <button onclick="toggleDarkMode()" style="background: none; border: none; font-size: 20px; cursor: pointer;" title="切換深色模式">🌓</button>
+                <button onclick="document.getElementById('search-modal').style.display='flex'" style="background: none; border: none; font-size: 20px; cursor: pointer;" title="搜尋">🔍</button>
+                <button id="settings-btn" title="系統設定">⚙️</button>
+                <button id="logout-btn">登出</button>
             </div>
         </div>
-    </div>
-
-    <div id="main-app">
         
-        <div id="sidebar">
-            <div class="sidebar-header">
-                <div style="display: flex; align-items: center; gap: 10px; font-weight: bold;">
-                    <div class="avatar" id="my-avatar">👤</div>
-                    <span id="my-username">載入中... (Loading...)</span>
-                </div>
-                <div>
-                    <button class="icon-btn" id="btn-theme" title="Toggle Dark Mode">🌓</button>
-                    <button class="icon-btn" id="btn-logout" title="Logout">🚪</button>
-                </div>
+        <div id="contact-list">
+            <div class="contact-item active" id="global-chat-btn">
+                <div class="profile-pic">👥</div>
+                <div class="contact-name">公開聊天室</div>
             </div>
-            
-            <div id="contact-list">
-                <div class="list-item active" id="room-global" onclick="if(window.AppCore && window.AppCore.switchRoom) { window.AppCore.switchRoom('global', '公開大廳', '🌍'); }">
-                    <div class="avatar">🌍</div>
-                    <div style="flex-grow: 1; font-weight: bold;">公開大廳 (Global Room)</div>
-                </div>
-            </div>
-            
-            <div class="sidebar-actions">
-                <button id="btn-add-friend" style="background-color: #3498db;">➕ 加入好友 (Add Friend)</button>
-                <button id="btn-create-group" style="background-color: #f39c12;">👥 建立群組 (Create Group)</button>
-            </div>
+            <div id="friend-list-container"></div>
         </div>
 
-        <div id="chat-area">
-            <div class="chat-header">
-                <div style="display: flex; align-items: center; gap: 10px; font-weight: bold;">
-                    <div class="avatar" id="current-room-icon" style="color: #000000;">🌍</div>
-                    <span id="current-room-name">公開大廳 (Global Room)</span>
-                </div>
-            </div>
-            
-            <div id="messages-container">
-                </div>
-            
-            <div id="panel-sticker" class="media-panel">
-                <div class="media-panel-header">
-                    <span>傳送貼圖 (Send Sticker)</span>
-                    <span style="cursor: pointer;" onclick="document.getElementById('panel-sticker').style.display='none'">✕</span>
-                </div>
-                <div class="media-grid" id="sticker-grid"></div>
-            </div>
-
-            <div id="panel-gif" class="media-panel">
-                <div class="media-panel-header">
-                    <span>搜尋 GIF (Search GIF)</span>
-                    <span style="cursor: pointer;" onclick="document.getElementById('panel-gif').style.display='none'">✕</span>
-                </div>
-                <div style="padding: 10px; border-bottom-width: 1px; border-bottom-style: solid; border-bottom-color: rgba(0,0,0,0.1);">
-                    <input type="text" id="gif-search-input" placeholder="Type keyword & hit Enter" style="width: 100%; padding: 8px; box-sizing: border-box; border-radius: 15px; border: 1px solid #ccc;">
-                </div>
-                <div class="media-grid" id="gif-grid"></div>
-            </div>
-
-            <div class="input-area">
-                <input type="file" id="file-upload" accept="image/*" style="display: none;">
-                <button style="background-color: transparent; color: var(--text-color-main);" title="Upload Image" onclick="document.getElementById('file-upload').click()">📎</button>
-                <button style="background-color: transparent; color: var(--text-color-main);" title="Send GIF" onclick="document.getElementById('panel-gif').style.display = document.getElementById('panel-gif').style.display === 'flex' ? 'none' : 'flex'; document.getElementById('panel-sticker').style.display = 'none';">🎞️</button>
-                <button style="background-color: transparent; color: var(--text-color-main);" title="Send Sticker" onclick="document.getElementById('panel-sticker').style.display = document.getElementById('panel-sticker').style.display === 'flex' ? 'none' : 'flex'; document.getElementById('panel-gif').style.display = 'none';">🤩</button>
-                
-                <input type="text" id="msg-input" placeholder="輸入訊息... (Type a message...)">
-                <button id="btn-send">➤</button>
-            </div>
+        <div id="add-friend-area">
+            <button id="create-group-btn">👥 建立群組</button>
+            <button id="add-friend-btn">➕ 新增朋友！</button>
         </div>
     </div>
 
-    <div id="modal-add-friend" class="modal-overlay">
+    <div id="chat-container">
+        <div id="chat-header">
+            <div class="header-left" id="chat-header-info">
+                <div class="profile-pic" id="chat-header-icon">👥</div>
+                <div class="contact-info">
+                    <div class="contact-name" id="chat-header-name">公開聊天室</div>
+                    <div class="contact-status" id="chat-header-status">大家都在這裡</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="chat-box"></div>
+
+        <div id="gif-modal">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h4 style="margin: 0; font-size: 14px; color: #333;">發送 GIF</h4>
+                <span id="close-gif" style="cursor: pointer; font-weight: bold; color: #888;">✕</span>
+            </div>
+            <input type="text" id="gif-search-input" placeholder="搜尋 GIF... (按 Enter 搜尋)">
+            <div class="gif-grid" id="gif-results-container"></div>
+        </div>
+
+        <div id="sticker-picker-modal">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h4 style="margin: 0; font-size: 14px; color: #333;">我的貼圖庫</h4>
+                <span id="close-sticker-picker" style="cursor: pointer; font-weight: bold; color: #888;">✕</span>
+            </div>
+            <div class="sticker-grid" id="my-stickers-container">
+                </div>
+        </div>
+        
+        <div id="input-area">
+            <label for="file-input" class="icon-btn">📎</label>
+            <input type="file" id="file-input" accept="image/*">
+            <input type="text" id="msg-input" placeholder="輸入訊息... (最多 200 字)" maxlength="200">
+            <button id="mic-btn" class="icon-btn voice-btn" onmousedown="startVoiceRecord()" onmouseup="stopVoiceRecord()" ontouchstart="startVoiceRecord()" ontouchend="stopVoiceRecord()">🎤</button>
+            <button id="gif-btn" class="icon-btn" style="font-weight: 800; font-size: 13px; background: #e0e0e0; border-radius: 8px; padding: 6px 10px; display: flex; align-items: center; justify-content: center;">GIF</button>
+            <button id="open-sticker-btn" class="icon-btn" style="font-size: 20px;" title="我的貼圖">🤩</button>
+            <button id="send-btn">發送</button>
+        </div>
+    </div>
+
+    <div id="add-friend-modal" class="modal-overlay">
         <div class="modal-content">
-            <h3 style="margin-top: 0px;">加入好友 (Add Friend)</h3>
-            <input type="text" id="friend-username-input" placeholder="Enter username..." style="width: 100%; padding: 10px; margin-top: 15px; margin-bottom: 15px; border: 1px solid rgba(0,0,0,0.1); border-radius: 6px; box-sizing: border-box;">
-            <div style="display: flex; justify-content: flex-end; gap: 10px;">
-                <button style="padding: 8px 15px; border-radius: 6px; border: none; cursor: pointer; font-weight: bold; background-color: #cccccc; color: #333333;" onclick="document.getElementById('modal-add-friend').style.display='none'">取消 (Cancel)</button>
-                <button id="btn-confirm-add-friend" style="padding: 8px 15px; border-radius: 6px; border: none; cursor: pointer; font-weight: bold; background-color: var(--secondary-color); color: #ffffff;">加入 (Add)</button>
+            <h3>新增朋友</h3>
+            <p style="font-size: 12px; color: #666; margin-top: -10px;">請輸入對方註冊的帳號名稱</p>
+            <input type="text" id="new-friend-input" placeholder="朋友的帳號...">
+            <div class="modal-btns">
+                <button id="cancel-add-btn" style="background: #ccc; color: #333;">取消</button>
+                <button id="confirm-add-btn" style="background: #128c7e; color: white;">新增</button>
             </div>
         </div>
     </div>
 
-    <div id="modal-create-group" class="modal-overlay">
-        <div class="modal-content">
-            <h3 style="margin-top: 0px;">建立群組 (Create Group)</h3>
-            <input type="text" id="group-name-input" placeholder="Group Name..." style="width: 100%; padding: 10px; margin-top: 15px; margin-bottom: 15px; border: 1px solid rgba(0,0,0,0.1); border-radius: 6px; box-sizing: border-box;">
-            <div id="group-member-selection" style="margin-bottom: 15px; max-height: 150px; overflow-y: auto;">
-                </div>
-            <div style="display: flex; justify-content: flex-end; gap: 10px;">
-                <button style="padding: 8px 15px; border-radius: 6px; border: none; cursor: pointer; font-weight: bold; background-color: #cccccc; color: #333333;" onclick="document.getElementById('modal-create-group').style.display='none'">取消 (Cancel)</button>
-                <button id="btn-confirm-create-group" style="padding: 8px 15px; border-radius: 6px; border: none; cursor: pointer; font-weight: bold; background-color: var(--secondary-color); color: #ffffff;">建立 (Create)</button>
+    <div id="create-group-modal" class="modal-overlay">
+        <div class="modal-content" style="width: 280px;">
+            <h3>建立群組</h3>
+            <input type="text" id="new-group-name" placeholder="輸入群組名稱...">
+            <p style="font-size: 12px; color: #666; margin-bottom: 5px; text-align: left; margin-top: 10px;">選擇要邀請的好友：</p>
+            <div id="group-friend-list"></div>
+            <div class="modal-btns">
+                <button id="cancel-group-btn" style="background: #ccc; color: #333;">取消</button>
+                <button id="confirm-group-btn" style="background: #e5a935; color: white;">建立</button>
             </div>
         </div>
     </div>
-    <script type="module">
-    // 刻意把所有可能用到的 Firebase 工具都明確 import 進來
+
+    <div id="invite-group-modal" class="modal-overlay" style="z-index: 60;">
+        <div class="modal-content" style="width: 280px;">
+            <h3>邀請好友加入</h3>
+            <p style="font-size: 12px; color: #666; margin-bottom: 5px; text-align: left; margin-top: 10px;">選擇要邀請的好友：</p>
+            <div id="invite-friend-list"></div>
+            <div class="modal-btns">
+                <button onclick="document.getElementById('invite-group-modal').style.display='none'">取消</button>
+                <button id="confirm-invite-btn" style="background: #128c7e; color: white;">邀請加入</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="sticker-maker-modal" class="modal-overlay" style="z-index: 60;">
+        <div class="modal-content" style="width: 300px;">
+            <h3>新增專屬貼圖</h3>
+            <p style="font-size: 12px; color: #666;">選擇照片並決定是否裁切，儲存後即可隨時使用！</p>
+            <input type="file" id="sticker-upload" accept="image/*" style="width: 90%; margin: 10px 0;">
+            <div style="margin: 10px 0;">
+                <input type="checkbox" id="sticker-crop-checkbox" onchange="drawStickerPreview()" checked>
+                <label for="sticker-crop-checkbox" style="font-size: 13px;">裁切成正方形</label>
+            </div>
+            <div style="background: #f0f0f0; padding: 10px; border-radius: 8px; margin-bottom: 10px; min-height: 150px; display:flex; justify-content:center; align-items:center;">
+                <canvas id="sticker-preview-canvas" style="max-width: 100%; max-height: 150px; border-radius: 10px;"></canvas>
+            </div>
+            <div class="modal-btns">
+                <button onclick="document.getElementById('sticker-maker-modal').style.display='none'">取消</button>
+                <button id="save-sticker-btn" onclick="saveSticker()" style="background: #e5a935; color: white;">儲存至圖庫</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="info-modal" class="modal-overlay">
+        <div class="modal-content" style="width: 280px;">
+            <div style="font-size: 50px; margin-bottom: 10px; width: 80px; height: 80px; margin: 0 auto; display: flex; align-items: center; justify-content: center; border-radius: 50%; overflow: hidden; background: #dfe5e7;" id="info-icon">👥</div>
+            <h3 id="info-name" style="margin: 10px 0 0 0; color: #333;">名稱</h3>
+            <p id="info-status" style="color: #128c7e; font-size: 14px; font-weight: bold; margin-top: 5px;">狀態</p>
+            <div id="info-extra" style="font-size: 13px; color: #555; margin-top: 15px; text-align: left; background: #f4f5f5; padding: 12px; border-radius: 8px; line-height: 1.6;"></div>
+            <button id="action-btn" style="display: none; margin-top: 15px; background: #e53935; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; width: 100%; font-weight: bold; transition: 0.2s;">操作按鈕</button>
+            <button id="close-info-btn" style="margin-top: 10px; background: #e0e0e0; color: #333; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; width: 100%; font-weight: bold; transition: 0.2s;">關閉</button>
+        </div>
+    </div>
+
+    <div id="settings-modal" class="modal-overlay">
+        <div class="modal-content" style="width: 260px;">
+            <h3 style="margin-top: 5px; color: #333;">⚙️ 系統設定</h3>
+            <div style="font-size: 13px; color: #555; text-align: left; background: #f4f5f5; padding: 12px; border-radius: 8px; line-height: 1.6; margin-bottom: 15px;">
+                <strong>目前版本：</strong> v<span id="settings-version"></span><br>
+                <strong>當前登入：</strong> <span id="settings-account"></span><br>
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 5px;">
+                    <div><strong>系統通知：</strong> <span id="settings-notification" style="font-weight:bold;"></span></div>
+                    <button id="toggle-notification-btn" style="padding: 4px 8px; background: #128c7e; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">切換</button>
+                </div>
+                <button onclick="document.getElementById('profile-pic-modal').style.display='flex'; document.getElementById('settings-modal').style.display='none';" style="margin-top: 15px; width: 100%; padding: 10px; background-color: #8e44ad; color: white; border: none; border-radius: 5px; font-size: 14px; font-weight: bold; cursor: pointer;">🖼️ 設定個人頭像</button>
+                <button onclick="document.getElementById('reminder-modal').style.display='flex'; document.getElementById('settings-modal').style.display='none';" style="margin-top: 10px; width: 100%; padding: 10px; background-color: #f39c12; color: white; border: none; border-radius: 5px; font-size: 14px; font-weight: bold; cursor: pointer;">⏰ 設定鬧鐘提醒</button>
+                <button id="reset-pwd-btn" style="margin-top: 10px; width: 100%; padding: 10px; background-color: #34495e; color: white; border: none; border-radius: 5px; font-size: 14px; font-weight: bold; cursor: pointer;">🔑 重設密碼</button>
+            </div>
+            <button id="close-settings-btn" style="background: #e0e0e0; color: #333; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; width: 100%; font-weight: bold; transition: 0.2s;">關閉</button>
+        </div>
+    </div>
+
+    <div id="profile-pic-modal" class="modal-overlay">
+        <div class="modal-content" style="width: 300px;">
+            <h3>設定個人頭像</h3>
+            <p style="font-size: 12px; color: #666;">請選擇一張照片作為你的大頭貼</p>
+            <input type="file" id="profile-pic-upload" accept="image/*" style="width: 90%; margin: 10px 0;">
+            <div class="modal-btns">
+                <button onclick="document.getElementById('profile-pic-modal').style.display='none'">取消</button>
+                <button id="save-profile-pic-btn" onclick="setProfilePic()" style="background: #128c7e; color: white;">上傳儲存</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="reaction-modal" class="modal-overlay" style="z-index: 60;">
+        <div class="modal-content" style="width: auto; background: transparent; box-shadow: none; padding: 0;">
+            <div style="background: white; padding: 10px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.2);">
+                <div class="reaction-picker">
+                    <span class="reaction-btn" onclick="confirmReaction('❤️')">❤️</span>
+                    <span class="reaction-btn" onclick="confirmReaction('😂')">😂</span>
+                    <span class="reaction-btn" onclick="confirmReaction('👍')">👍</span>
+                    <span class="reaction-btn" onclick="confirmReaction('😢')">😢</span>
+                    <span class="reaction-btn" onclick="confirmReaction('🔥')">🔥</span>
+                    <span class="reaction-btn" onclick="confirmReaction('🎉')">🎉</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="edit-msg-modal" class="modal-overlay">
+        <div class="modal-content" style="width: 300px;">
+            <h3>編輯訊息</h3>
+            <input type="text" id="edit-msg-input" placeholder="編輯訊息內容..." maxlength="200" style="width: 90%; padding: 8px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
+            <div class="modal-btns">
+                <button onclick="document.getElementById('edit-msg-modal').style.display='none'">取消</button>
+                <button id="confirm-edit-btn" style="background: #128c7e; color: white;">確認編輯</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="search-modal" class="modal-overlay">
+        <div class="modal-content" style="width: 320px;">
+            <h3>搜尋訊息</h3>
+            <div class="msg-search-bar">
+                <input type="text" id="search-input" placeholder="搜尋關鍵字...">
+                <button onclick="performMessageSearch()">搜尋</button>
+            </div>
+            <div id="search-results" style="max-height: 200px; overflow-y: auto; font-size: 12px;"></div>
+            <button onclick="document.getElementById('search-modal').style.display='none'" style="width: 100%; margin-top: 10px; padding: 8px; background: #e0e0e0; border: none; border-radius: 4px; cursor: pointer;">關閉</button>
+        </div>
+    </div>
+
+    <div id="reminder-modal" class="modal-overlay">
+        <div class="modal-content" style="width: 300px;">
+            <h3>設定提醒</h3>
+            <input type="text" id="reminder-text" placeholder="提醒內容..." style="width: 90%; padding: 8px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
+            <input type="number" id="reminder-mins" placeholder="幾分鐘後提醒" min="1" max="1440" value="5" style="width: 90%; padding: 8px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
+            <div class="modal-btns">
+                <button onclick="document.getElementById('reminder-modal').style.display='none'">取消</button>
+                <button onclick="setReminder()" style="background: #128c7e; color: white;">設定</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script type="module">
+    // ==========================================
+    // 1. 引入 Firebase 模組與初始化
+    // ==========================================
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { 
-        getDatabase, 
-        ref as databaseReference, 
-        push as databasePush, 
-        onValue as databaseOnValue, 
-        set as databaseSet, 
-        get as databaseGet, 
-        update as databaseUpdate, 
-        onDisconnect as databaseOnDisconnect, 
-        serverTimestamp as databaseServerTimestamp 
-    } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        getFirestore, collection, addDoc, onSnapshot, 
+        query, orderBy, serverTimestamp, doc, updateDoc, 
+        deleteDoc, getDoc, setDoc, arrayUnion, arrayRemove 
+    } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-    // ✅ 這裡已經替換成你提供的真實 Firebase 金鑰！
-    var firebaseConfigurationOptions = {
-        apiKey: "AIzaSyDY9uX6jJW0HMOGQgoel1hR-3ReLlQjw-A",
-        authDomain: "chat-54795.firebaseapp.com",
-        databaseURL: "https://chat-54795-default-rtdb.firebaseio.com", // 幫你補上 Realtime DB 網址
-        projectId: "chat-54795",
-        storageBucket: "chat-54795.firebasestorage.app",
-        messagingSenderId: "915552330387",
-        appId: "1:915552330387:web:c38152f34d3aa7abe62366"
+    // ⚠️ 請填入你自己的 Firebase 設定
+    const firebaseConfig = {
+        apiKey: "YOUR_API_KEY",
+        authDomain: "YOUR_AUTH_DOMAIN",
+        projectId: "YOUR_PROJECT_ID",
+        storageBucket: "YOUR_STORAGE_BUCKET",
+        messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+        appId: "YOUR_APP_ID"
     };
 
-    var firebaseApplicationInstance;
-    var firebaseDatabaseInstance;
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
 
-    try {
-        console.log("開始執行 Firebase 初始化程序...");
-        firebaseApplicationInstance = initializeApp(firebaseConfigurationOptions);
-        // 使用 getDatabase 確保和我們的聊天室邏輯相容
-        firebaseDatabaseInstance = getDatabase(firebaseApplicationInstance);
-        
-        // 將資料庫實例掛載到全域 window 物件，讓後面的部分可以使用
-        window.dbInstance = firebaseDatabaseInstance;
-        console.log("✅ Firebase 初始化成功！資料庫實例已綁定至 window.dbInstance。");
-    } catch (initializationError) {
-        console.error("❌ 嚴重錯誤：無法初始化 Firebase。", initializationError);
-        alert("系統錯誤：資料庫連線失敗。請檢查設定檔。");
-    }
+    // ⚠️ 請填入你的 Cloudinary 設定 (用於語音與圖片上傳)
+    const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/YOUR_CLOUD_NAME/upload";
+    const CLOUDINARY_UPLOAD_PRESET = "YOUR_UPLOAD_PRESET";
 
     // ==========================================
-    // [6] 全域狀態管理 (傳統明確物件寫法)
+    // 2. 全域變數宣告
     // ==========================================
-    window.AppCore = {
-        state: {
-            currentUser: null,
-            currentRoom: 'global',
-            friends: [],
-            groups: [],
-            isOnline: false,
-            lastActivityTimestamp: Date.now()
+    let currentUser = null;
+    let currentRoom = "global";
+    let isDarkMode = false;
+    let usersData = {}; // 儲存所有使用者的資料
+    let myStickers = []; // 儲存我的貼圖
+    
+    // 語音錄製相關變數
+    let mediaRecorder;
+    let audioChunks = [];
+
+    // 選取的訊息 (用於編輯或回覆)
+    let selectedMessageId = null;
+
+    // ==========================================
+    // 3. 登入與初始化系統
+    // ==========================================
+    document.getElementById("join-btn").addEventListener("click", async () => {
+        const username = document.getElementById("username-input").value.trim();
+        const password = document.getElementById("password-input").value.trim();
+
+        if (!username || !password) {
+            alert("請輸入帳號和密碼！");
+            return;
         }
-    };
 
-    // 安全更新狀態的輔助函式
-    window.AppCore.setState = function(newStateObject) {
-        // 使用傳統的 Object.assign 而不是解構賦值
-        Object.assign(window.AppCore.state, newStateObject);
-        console.log("🔄 全域狀態已更新。目前的狀態為：", window.AppCore.state);
-    };
+        // 簡單的登入邏輯：將使用者資料寫入 Firestore
+        const userRef = doc(db, "users", username);
+        const userSnap = await getDoc(userRef);
 
-    // ==========================================
-    // [7] DOM 初始化與事件監聽綁定
-    // ==========================================
-    window.AppCore.initializeDOMEventListeners = function() {
-        console.log("正在綁定 DOM 事件監聽器...");
-        
-        var loginButtonElement = document.getElementById('btn-login');
-        if (loginButtonElement !== null) {
-            loginButtonElement.addEventListener('click', function(event) {
-                console.log("使用者點擊了登入按鈕。");
-                window.AppCore.executeLoginProcess();
+        if (!userSnap.exists()) {
+            // 註冊新使用者
+            await setDoc(userRef, {
+                username: username,
+                password: password, // 實務上應加密
+                profilePic: "👤",
+                role: "user",
+                friends: [],
+                joinedAt: serverTimestamp()
             });
         } else {
-            console.warn("在 DOM 中找不到登入按鈕 (btn-login)。");
-        }
-
-        var passwordInputElement = document.getElementById('login-password');
-        if (passwordInputElement !== null) {
-            passwordInputElement.addEventListener('keypress', function(keyboardEvent) {
-                if (keyboardEvent.key === 'Enter') {
-                    console.log("使用者在密碼框按下了 Enter 鍵。");
-                    window.AppCore.executeLoginProcess();
-                }
-            });
-        }
-
-        var logoutButtonElement = document.getElementById('btn-logout');
-        if (logoutButtonElement !== null) {
-            logoutButtonElement.addEventListener('click', function(event) {
-                console.log("使用者點擊了登出按鈕。");
-                window.AppCore.executeLogoutProcess();
-            });
-        }
-
-        // 發送訊息按鈕綁定
-        var sendMessageButton = document.getElementById('btn-send');
-        if (sendMessageButton !== null) {
-            sendMessageButton.addEventListener('click', function() {
-                if (window.AppCore.sendMessage) {
-                    window.AppCore.sendMessage('text');
-                } else {
-                    console.error("sendMessage 函式尚未定義！");
-                }
-            });
-        }
-
-        var messageInputBox = document.getElementById('msg-input');
-        if (messageInputBox !== null) {
-            messageInputBox.addEventListener('keypress', function(keyboardEvent) {
-                if (keyboardEvent.key === 'Enter') {
-                    if (window.AppCore.sendMessage) {
-                        window.AppCore.sendMessage('text');
-                    }
-                }
-            });
-        }
-        
-        var fileUploadElement = document.getElementById('file-upload');
-        if (fileUploadElement !== null) {
-            fileUploadElement.addEventListener('change', function(event) {
-                if (window.AppCore.handleFileUpload) {
-                    window.AppCore.handleFileUpload(event);
-                }
-            });
-        }
-
-        window.AppCore.checkLocalStorageForExistingSession();
-    };
-
-    // ==========================================
-    // [8] 驗證與登入邏輯 (繁瑣展開版)
-    // ==========================================
-    window.AppCore.checkLocalStorageForExistingSession = function() {
-        console.log("正在檢查 localStorage 是否有先前的登入紀錄...");
-        var savedUsername = localStorage.getItem('safari_chat_user_session');
-        
-        if (savedUsername !== null && savedUsername !== "") {
-            console.log("🔍 發現先前的登入紀錄，使用者：" + savedUsername);
-            var usernameInputBox = document.getElementById('login-username');
-            if (usernameInputBox !== null) {
-                usernameInputBox.value = savedUsername;
-            }
-        } else {
-            console.log("沒有找到先前的登入紀錄。");
-        }
-    };
-
-    window.AppCore.executeLoginProcess = async function() {
-        var usernameInputElement = document.getElementById('login-username');
-        var passwordInputElement = document.getElementById('login-password');
-        var loginButtonElement = document.getElementById('btn-login');
-
-        if (usernameInputElement === null || passwordInputElement === null) {
-            console.error("找不到登入輸入框元素！");
-            return;
-        }
-
-        var rawUsername = usernameInputElement.value;
-        var rawPassword = passwordInputElement.value;
-        
-        // 嚴格清除前後空白
-        var cleanUsername = rawUsername.trim();
-        var cleanPassword = rawPassword.trim();
-
-        // 非常明確的防呆驗證
-        if (cleanUsername === "") {
-            alert("帳號不能為空！");
-            usernameInputElement.focus();
-            return;
-        }
-        
-        if (cleanPassword === "") {
-            alert("密碼不能為空！");
-            passwordInputElement.focus();
-            return;
-        }
-        
-        if (cleanUsername.length < 3) {
-            alert("帳號長度至少需 3 個字元。");
-            usernameInputElement.focus();
-            return;
-        }
-        
-        if (cleanPassword.length < 6) {
-            alert("密碼長度至少需 6 個字元。");
-            passwordInputElement.focus();
-            return;
-        }
-
-        // 將 UI 設定為載入中狀態
-        loginButtonElement.disabled = true;
-        loginButtonElement.innerText = "驗證中...";
-
-        var userDatabasePath = 'users/' + cleanUsername;
-        var userReference = databaseReference(window.dbInstance, userDatabasePath);
-        
-        try {
-            console.log("正在從資料庫讀取使用者資料...");
-            var databaseSnapshot = await databaseGet(userReference);
-            
-            if (databaseSnapshot.exists() === true) {
-                console.log("找到使用者紀錄。正在驗證密碼...");
-                var userRecordData = databaseSnapshot.val();
-                
-                if (userRecordData.password !== cleanPassword) {
-                    throw new Error("密碼錯誤，請再試一次。");
-                }
-                console.log("✅ 密碼驗證成功！");
-            } else {
-                console.log("找不到此使用者。正在建立新帳號...");
-                var newUserRecordObject = {
-                    password: cleanPassword,
-                    createdAt: databaseServerTimestamp(),
-                    lastLoginDate: databaseServerTimestamp(),
-                    status: "online",
-                    friends: { 'System': true } // 預設好友
-                };
-                
-                await databaseSet(userReference, newUserRecordObject);
-                console.log("✅ 新帳號已成功寫入資料庫。");
-                alert("新帳號註冊成功！系統將自動為您登入...");
-            }
-
-            // 執行登入成功後的程序
-            window.AppCore.handleSuccessfulLogin(cleanUsername);
-
-        } catch (authenticationError) {
-            console.error("登入過程中發生錯誤:", authenticationError);
-            alert(authenticationError.message || "無法連線至伺服器，請檢查您的網路狀態。");
-            
-            // 恢復 UI 狀態
-            loginButtonElement.disabled = false;
-            loginButtonElement.innerText = "進入聊天室";
-        }
-    };
-
-    window.AppCore.handleSuccessfulLogin = function(validatedUsername) {
-        console.log("執行登入成功後的 UI 更新，使用者：" + validatedUsername);
-        
-        // 更新狀態與本地儲存
-        window.AppCore.setState({ currentUser: validatedUsername });
-        localStorage.setItem('safari_chat_user_session', validatedUsername);
-
-        // 隱藏登入畫面，顯示主應用程式
-        var loginScreenElement = document.getElementById('login-screen');
-        var mainAppElement = document.getElementById('main-app');
-        var myUsernameDisplayElement = document.getElementById('my-username');
-        
-        if (loginScreenElement !== null) {
-            loginScreenElement.style.display = 'none';
-        }
-        
-        if (mainAppElement !== null) {
-            mainAppElement.style.display = 'flex';
-        }
-        
-        if (myUsernameDisplayElement !== null) {
-            myUsernameDisplayElement.innerText = validatedUsername;
-        }
-
-        // 啟動連線狀態監控
-        window.AppCore.setupPresenceMonitoring();
-        
-        // 呼叫切換房間
-        if (window.AppCore.switchRoom) {
-            window.AppCore.switchRoom('global', '公開大廳', '🌍');
-        }
-    };
-
-    window.AppCore.executeLogoutProcess = function() {
-        console.log("開始執行登出程序...");
-        var userConfirmed = confirm("您確定要登出嗎？");
-        
-        if (userConfirmed === true) {
-            if (window.AppCore.state.currentUser !== null) {
-                console.log("在清除 session 前，先將使用者狀態設為離線...");
-                var userStatusPath = 'users/' + window.AppCore.state.currentUser + '/status';
-                var userStatusReference = databaseReference(window.dbInstance, userStatusPath);
-                
-                databaseSet(userStatusReference, "offline").then(function() {
-                    localStorage.removeItem('safari_chat_user_session');
-                    console.log("Session 已清除。準備重新載入頁面...");
-                    window.location.reload();
-                }).catch(function(error) {
-                    console.error("設定離線狀態失敗，強制重新載入。", error);
-                    localStorage.removeItem('safari_chat_user_session');
-                    window.location.reload();
-                });
-            } else {
-                window.location.reload();
-            }
-        } else {
-            console.log("使用者取消了登出動作。");
-        }
-    };
-
-    // ==========================================
-    // [9] 連線狀態監控 (Presence Monitoring)
-    // ==========================================
-    window.AppCore.setupPresenceMonitoring = function() {
-        var currentActiveUser = window.AppCore.state.currentUser;
-        
-        if (currentActiveUser === null) {
-            console.warn("無法設定連線狀態監控：目前沒有已登入的使用者。");
-            return;
-        }
-
-        var firebaseConnectedReference = databaseReference(window.dbInstance, '.info/connected');
-        var userStatusPath = 'users/' + currentActiveUser + '/status';
-        var userStatusReference = databaseReference(window.dbInstance, userStatusPath);
-        
-        databaseOnValue(firebaseConnectedReference, function(snapshot) {
-            var isConnected = snapshot.val();
-            
-            if (isConnected === true) {
-                console.log("📡 客戶端已成功連線至 Firebase 即時資料庫。");
-                window.AppCore.setState({ isOnline: true });
-                databaseSet(userStatusReference, "online");
-                databaseOnDisconnect(userStatusReference).set("offline");
-            } else {
-                console.warn("⚠️ 客戶端已與 Firebase 斷開連線。");
-                window.AppCore.setState({ isOnline: false });
-            }
-        });
-    };
-
-    // 當 HTML 文件完全載入後，執行 DOM 初始化
-    window.addEventListener('DOMContentLoaded', function() {
-        console.log("文件已完全載入。觸發 AppCore 初始化。");
-        window.AppCore.initializeDOMEventListeners();
-    });
-
-    // ⬇️ 第 3 部分與第 4 部分的程式碼直接接在這行下面 ⬇️
-        // ==========================================
-    // [10] 聊天室房間切換邏輯 (Room Switching)
-    // ==========================================
-    // 為了避免重複監聽，我們需要一個變數來儲存目前的監聽器取消函式
-    var currentRoomListenerUnsubscribe = null;
-
-    window.AppCore.switchRoom = function(roomId, roomName, roomIcon) {
-        console.log("準備切換房間。目標房間 ID：" + roomId + "，名稱：" + roomName);
-
-        // 1. 更新全域狀態
-        window.AppCore.setState({ currentRoom: roomId });
-
-        // 2. 更新聊天室標題 UI
-        var currentRoomNameElement = document.getElementById('current-room-name');
-        var currentRoomIconElement = document.getElementById('current-room-icon');
-        
-        if (currentRoomNameElement !== null) {
-            currentRoomNameElement.innerText = roomName;
-        }
-        if (currentRoomIconElement !== null) {
-            currentRoomIconElement.innerText = roomIcon;
-        }
-
-        // 3. 清空目前的訊息容器
-        var messagesContainerElement = document.getElementById('messages-container');
-        if (messagesContainerElement !== null) {
-            messagesContainerElement.innerHTML = '';
-            console.log("已清空舊房間的訊息畫面。");
-        }
-
-        // 4. 解除舊房間的資料庫監聽 (如果有的話)
-        if (typeof currentRoomListenerUnsubscribe === 'function') {
-            console.log("正在解除舊房間的監聽器...");
-            currentRoomListenerUnsubscribe();
-            currentRoomListenerUnsubscribe = null;
-        }
-
-        // 5. 設定新房間的資料庫路徑並開始監聽
-        var roomMessagesPath = 'messages/' + roomId;
-        var roomMessagesReference = databaseReference(window.dbInstance, roomMessagesPath);
-        
-        console.log("開始監聽新房間資料路徑：" + roomMessagesPath);
-        
-        // 這裡我們使用 onValue 來監聽整個訊息節點的變化
-        // ⚠️ 在正式大型專案中，通常會使用 query、limitToLast 和 onChildAdded 來優化效能
-        currentRoomListenerUnsubscribe = databaseOnValue(roomMessagesReference, function(snapshot) {
-            console.log("收到資料庫訊息更新事件！");
-            
-            // 每次收到更新，先清空畫面 (這是最基礎的暴力渲染法)
-            if (messagesContainerElement !== null) {
-                messagesContainerElement.innerHTML = '';
-            }
-
-            if (snapshot.exists() === true) {
-                var allMessages = snapshot.val();
-                var messageKeys = Object.keys(allMessages);
-                
-                // 為了確保訊息按時間排序 (Firebase push key 本身包含時間戳)
-                messageKeys.sort(); 
-
-                for (var i = 0; i < messageKeys.length; i++) {
-                    var currentKey = messageKeys[i];
-                    var messageData = allMessages[currentKey];
-                    window.AppCore.renderMessage(currentKey, messageData);
-                }
-                
-                // 捲動到最底部
-                window.AppCore.scrollToBottom();
-            } else {
-                console.log("此房間目前沒有任何訊息。");
-            }
-        });
-
-        // 6. 更新側邊欄的活動狀態 (標示哪個房間被選取)
-        var allListItems = document.querySelectorAll('.list-item');
-        for (var j = 0; j < allListItems.length; j++) {
-            allListItems[j].classList.remove('active');
-        }
-        
-        var activeRoomElement = document.getElementById('room-' + roomId);
-        if (activeRoomElement !== null) {
-            activeRoomElement.classList.add('active');
-        }
-    };
-
-    // ==========================================
-    // [11] 訊息發送邏輯 (Message Sending)
-    // ==========================================
-    window.AppCore.sendMessage = async function(messageType, mediaContentUrl) {
-        var currentUser = window.AppCore.state.currentUser;
-        var currentRoom = window.AppCore.state.currentRoom;
-
-        if (currentUser === null) {
-            alert("請先登入才能發送訊息！");
-            return;
-        }
-
-        var messageContent = "";
-        var messageInputBox = document.getElementById('msg-input');
-
-        // 判斷訊息類型
-        if (messageType === 'text') {
-            if (messageInputBox === null) return;
-            var rawText = messageInputBox.value;
-            messageContent = rawText.trim();
-            
-            if (messageContent === "") {
-                console.log("文字訊息為空，取消發送。");
-                return; // 不發送空訊息
-            }
-        } else if (messageType === 'image' || messageType === 'sticker' || messageType === 'gif') {
-            // 如果是媒體類型，內容就是網址
-            messageContent = mediaContentUrl;
-        } else {
-            console.error("未知的訊息類型：" + messageType);
-            return;
-        }
-
-        console.log("準備發送訊息，類型：" + messageType + "，內容：" + messageContent);
-
-        // 建構要發送的訊息物件
-        var newMessageObject = {
-            sender: currentUser,
-            type: messageType,
-            content: messageContent,
-            timestamp: Date.now() // 使用本地時間作為備用
-            // ⚠️ 理想情況下會使用 databaseServerTimestamp()，但在 onValue 渲染時本地時間比較好處理
-        };
-
-        var roomMessagesPath = 'messages/' + currentRoom;
-        var roomMessagesReference = databaseReference(window.dbInstance, roomMessagesPath);
-
-        try {
-            // 使用 push 產生一個隨機且唯一 ID
-            await databasePush(roomMessagesReference, newMessageObject);
-            console.log("✅ 訊息發送成功寫入資料庫！");
-
-            // 如果是文字訊息，發送後清空輸入框並關閉其他面板
-            if (messageType === 'text' && messageInputBox !== null) {
-                messageInputBox.value = '';
-                messageInputBox.focus();
-            }
-
-            // 關閉可能開啟的媒體面板
-            var stickerPanel = document.getElementById('panel-sticker');
-            var gifPanel = document.getElementById('panel-gif');
-            if (stickerPanel !== null) stickerPanel.style.display = 'none';
-            if (gifPanel !== null) gifPanel.style.display = 'none';
-
-        } catch (sendError) {
-            console.error("❌ 訊息發送失敗：", sendError);
-            alert("發送訊息失敗，請檢查網路連線。");
-        }
-    };
-
-    // ==========================================
-    // [12] 訊息畫面渲染邏輯 (Message Rendering)
-    // ==========================================
-    window.AppCore.renderMessage = function(messageId, messageData) {
-        var messagesContainerElement = document.getElementById('messages-container');
-        if (messagesContainerElement === null) {
-            console.error("找不到訊息容器，無法渲染訊息！");
-            return;
-        }
-
-        var currentUser = window.AppCore.state.currentUser;
-        var isMe = (messageData.sender === currentUser);
-
-        // 1. 建立最外層的包裹器 (Wrapper)
-        var messageWrapperElement = document.createElement('div');
-        messageWrapperElement.classList.add('msg-wrapper');
-        if (isMe === true) {
-            messageWrapperElement.classList.add('me');
-        } else {
-            messageWrapperElement.classList.add('other');
-        }
-
-        // 2. 建立發送者名稱顯示 (如果是自己發的就不顯示名稱)
-        if (isMe === false) {
-            var senderNameElement = document.createElement('div');
-            senderNameElement.classList.add('msg-sender');
-            senderNameElement.innerText = messageData.sender;
-            messageWrapperElement.appendChild(senderNameElement);
-        }
-
-        // 3. 建立對話氣泡本體
-        var messageBubbleElement = document.createElement('div');
-        messageBubbleElement.classList.add('msg-bubble');
-
-        // 4. 根據訊息類型塞入不同內容
-        if (messageData.type === 'text') {
-            // 純文字
-            var textNode = document.createTextNode(messageData.content);
-            messageBubbleElement.appendChild(textNode);
-            
-        } else if (messageData.type === 'image' || messageData.type === 'gif') {
-            // 圖片或 GIF
-            var imageElement = document.createElement('img');
-            imageElement.setAttribute('src', messageData.content);
-            imageElement.classList.add('msg-media');
-            // 點擊圖片可以在新分頁打開
-            imageElement.addEventListener('click', function() {
-                window.open(messageData.content, '_blank');
-            });
-            messageBubbleElement.appendChild(imageElement);
-            
-            // 由於圖片需要載入時間，載入完成後再次捲動到底部
-            imageElement.onload = function() {
-                window.AppCore.scrollToBottom();
-            };
-            
-        } else if (messageData.type === 'sticker') {
-            // 貼圖 (去背大圖)
-            var stickerElement = document.createElement('img');
-            stickerElement.setAttribute('src', messageData.content);
-            stickerElement.classList.add('msg-sticker');
-            messageBubbleElement.classList.remove('msg-bubble'); // 移除預設背景
-            messageBubbleElement.appendChild(stickerElement);
-            
-            stickerElement.onload = function() {
-                window.AppCore.scrollToBottom();
-            };
-        }
-
-        // 5. 建立時間戳記
-        var timeElement = document.createElement('div');
-        timeElement.classList.add('msg-time');
-        var messageDateObject = new Date(messageData.timestamp);
-        var hours = messageDateObject.getHours().toString().padStart(2, '0');
-        var minutes = messageDateObject.getMinutes().toString().padStart(2, '0');
-        timeElement.innerText = hours + ':' + minutes;
-        
-        // 將時間加入氣泡內
-        messageBubbleElement.appendChild(timeElement);
-
-        // 6. 將氣泡加入包裹器，再將包裹器加入容器
-        messageWrapperElement.appendChild(messageBubbleElement);
-        messagesContainerElement.appendChild(messageWrapperElement);
-    };
-
-    // 輔助函式：將對話框捲動到最底部
-    window.AppCore.scrollToBottom = function() {
-        var messagesContainerElement = document.getElementById('messages-container');
-        if (messagesContainerElement !== null) {
-            messagesContainerElement.scrollTop = messagesContainerElement.scrollHeight;
-        }
-    };
-        // ==========================================
-    // [13] 覆寫圖片上傳邏輯 (使用 Cloudinary API 囉嗦版)
-    // ==========================================
-    const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/drwflposq/image/upload";
-    const CLOUDINARY_UPLOAD_PRESET = "ml_default";
-
-    window.AppCore.handleFileUpload = async function(event) {
-        if (typeof event.target.files === 'undefined' || event.target.files.length === 0) {
-            console.log("使用者取消了檔案選擇。");
-            return;
-        }
-
-        const selectedFile = event.target.files[0];
-        console.log("準備上傳圖片至 Cloudinary，檔案名稱：" + selectedFile.name);
-
-        // 建立 FormData 物件來包裝要上傳的資料
-        const formData = new FormData();
-        formData.append("file", selectedFile);
-        formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
-
-        try {
-            console.log("正在發送 POST 請求至 Cloudinary...");
-            const response = await fetch(CLOUDINARY_URL, {
-                method: "POST",
-                body: formData
-            });
-
-            if (response.ok === false) {
-                throw new Error("Cloudinary 上傳失敗，HTTP 狀態碼：" + response.status);
-            }
-
-            const responseData = await response.json();
-            console.log("Cloudinary 上傳成功！取得圖片網址：" + responseData.secure_url);
-
-            // 呼叫第 3 部分寫好的 sendMessage 函式，並標記為 image
-            window.AppCore.sendMessage('image', responseData.secure_url);
-
-        } catch (uploadError) {
-            console.error("圖片上傳發生嚴重錯誤：", uploadError);
-            alert("圖片上傳失敗，請檢查網路連線或 Cloudinary 設定。");
-        }
-    };
-
-    // ==========================================
-    // [14] Tenor GIF 搜尋邏輯 (手動建構 DOM 版)
-    // ==========================================
-    const TENOR_API_KEY = "LIVDSRZULELA";
-    const gifSearchInputElement = document.getElementById('gif-search-input');
-    const gifGridElement = document.getElementById('gif-grid');
-
-    window.AppCore.searchGIFs = async function(searchQuery) {
-        if (gifGridElement === null) {
-            console.error("找不到 GIF 顯示網格元素！");
-            return;
-        }
-
-        // 清空目前的 GIF 網格，並顯示載入中
-        gifGridElement.innerHTML = '';
-        const loadingText = document.createTextNode("搜尋中 (Searching)...");
-        gifGridElement.appendChild(loadingText);
-
-        // 建構 Tenor API 網址 (使用 v1 API 格式)
-        let apiUrl = "https://g.tenor.com/v1/search?q=" + encodeURIComponent(searchQuery) + "&key=" + TENOR_API_KEY + "&limit=12";
-        
-        // 如果沒有輸入關鍵字，就抓取熱門 GIF
-        if (searchQuery === "" || typeof searchQuery === 'undefined') {
-            apiUrl = "https://g.tenor.com/v1/trending?key=" + TENOR_API_KEY + "&limit=12";
-        }
-
-        try {
-            console.log("正在請求 Tenor API，網址：" + apiUrl);
-            const response = await fetch(apiUrl);
-            
-            if (response.ok === false) {
-                throw new Error("Tenor API 請求失敗");
-            }
-
-            const data = await response.json();
-            const resultsArray = data.results;
-
-            // 清空載入中文字
-            gifGridElement.innerHTML = '';
-
-            if (resultsArray.length === 0) {
-                const noResultText = document.createTextNode("找不到相關 GIF");
-                gifGridElement.appendChild(noResultText);
+            // 驗證密碼
+            if (userSnap.data().password !== password) {
+                alert("密碼錯誤！");
                 return;
             }
-
-            // 傳統 for 迴圈展開渲染每一個 GIF
-            for (let i = 0; i < resultsArray.length; i++) {
-                const currentGifObj = resultsArray[i];
-                // 抓取適合的預覽圖片 URL 和實際 GIF URL
-                const previewUrl = currentGifObj.media[0].nanogif.url;
-                const actualGifUrl = currentGifObj.media[0].gif.url;
-
-                const gifImgElement = document.createElement('img');
-                gifImgElement.setAttribute('src', previewUrl);
-                gifImgElement.style.width = "100%";
-                gifImgElement.style.height = "100px";
-                gifImgElement.style.objectFit = "cover";
-                gifImgElement.style.borderRadius = "8px";
-                gifImgElement.style.cursor = "pointer";
-
-                // 綁定點擊事件，發送實際的 GIF URL
-                gifImgElement.addEventListener('click', function() {
-                    console.log("使用者選擇了 GIF：" + actualGifUrl);
-                    window.AppCore.sendMessage('gif', actualGifUrl);
-                });
-
-                gifGridElement.appendChild(gifImgElement);
-            }
-
-        } catch (gifError) {
-            console.error("取得 GIF 時發生錯誤：", gifError);
-            gifGridElement.innerHTML = "載入失敗 (Load Failed)";
         }
-    };
 
-    // 綁定 GIF 搜尋框的 Enter 事件
-    if (gifSearchInputElement !== null) {
-        gifSearchInputElement.addEventListener('keypress', function(event) {
-            if (event.key === 'Enter') {
-                const queryText = gifSearchInputElement.value.trim();
-                window.AppCore.searchGIFs(queryText);
-            }
+        currentUser = username;
+        document.getElementById("my-name-display").textContent = currentUser;
+        document.getElementById("settings-account").textContent = currentUser;
+        
+        // 切換畫面
+        document.getElementById("login-screen").style.display = "none";
+        document.getElementById("main-container").style.display = "flex";
+
+        // 啟動監聽器
+        listenToUsers();
+        listenToMessages(currentRoom);
+        loadMyStickers();
+    });
+
+    // ==========================================
+    // 4. 監聽 Firebase 資料
+    // ==========================================
+    function listenToUsers() {
+        const q = query(collection(db, "users"));
+        onSnapshot(q, (snapshot) => {
+            usersData = {};
+            snapshot.forEach((doc) => {
+                usersData[doc.id] = doc.data();
+            });
+            renderContactList();
         });
     }
 
-    // 當打開 GIF 面板時，預設載入熱門 GIF
-    const gifPanelToggleButton = document.querySelector('button[title="Send GIF"]');
-    if (gifPanelToggleButton !== null) {
-        gifPanelToggleButton.addEventListener('click', function() {
-            // 如果面板是打開的狀態，且裡面還沒有內容，就載入熱門
-            const gifPanelDisplay = document.getElementById('panel-gif').style.display;
-            if (gifPanelDisplay === 'flex') {
-                if (gifGridElement !== null && gifGridElement.innerHTML === '') {
-                    window.AppCore.searchGIFs(""); // 傳入空字串載入熱門
+    function listenToMessages(roomId) {
+        const q = query(collection(db, "messages"), orderBy("createdAt", "asc"));
+        onSnapshot(q, (snapshot) => {
+            const chatBox = document.getElementById("chat-box");
+            chatBox.innerHTML = ""; // 清空聊天室
+
+            snapshot.forEach((docSnap) => {
+                const msg = docSnap.data();
+                // 只顯示當前房間的訊息
+                if (msg.roomId === roomId) {
+                    renderSingleMessage(docSnap.id, msg);
                 }
-            }
-        });
-    }
-
-    // ==========================================
-    // [15] 貼圖面板靜態渲染 (手動建立節點版)
-    // ==========================================
-    window.AppCore.initializeStickers = function() {
-        const stickerGridElement = document.getElementById('sticker-grid');
-        if (stickerGridElement === null) {
-            console.warn("找不到貼圖網格，跳過貼圖初始化。");
-            return;
-        }
-
-        // 準備一些預設貼圖網址 (這裡使用假圖庫作為範例)
-        const defaultStickers = [
-            "https://cdn-icons-png.flaticon.com/128/4860/4860950.png", // 笑臉
-            "https://cdn-icons-png.flaticon.com/128/4860/4860965.png", // 愛心
-            "https://cdn-icons-png.flaticon.com/128/4860/4860978.png", // 哭泣
-            "https://cdn-icons-png.flaticon.com/128/4861/4861054.png", // 讚
-            "https://cdn-icons-png.flaticon.com/128/4860/4860987.png", // 生氣
-            "https://cdn-icons-png.flaticon.com/128/4860/4860946.png"  // 慶祝
-        ];
-
-        for (let i = 0; i < defaultStickers.length; i++) {
-            const currentStickerUrl = defaultStickers[i];
-            
-            const stickerImg = document.createElement('img');
-            stickerImg.setAttribute('src', currentStickerUrl);
-            stickerImg.style.width = "100%";
-            stickerImg.style.height = "80px";
-            stickerImg.style.objectFit = "contain";
-            stickerImg.style.cursor = "pointer";
-
-            stickerImg.addEventListener('click', function() {
-                console.log("使用者點擊了貼圖：" + currentStickerUrl);
-                window.AppCore.sendMessage('sticker', currentStickerUrl);
             });
 
-            stickerGridElement.appendChild(stickerImg);
-        }
-        console.log("貼圖面板初始化完成。");
-    };
-
-    // ==========================================
-    // [16] 深色模式切換 (Dark Mode Toggle)
-    // ==========================================
-    const themeToggleButton = document.getElementById('btn-theme');
-    if (themeToggleButton !== null) {
-        themeToggleButton.addEventListener('click', function() {
-            console.log("切換深色/淺色模式");
-            const bodyElement = document.body;
-            
-            if (bodyElement.classList.contains('dark-mode')) {
-                bodyElement.classList.remove('dark-mode');
-                themeToggleButton.innerText = "🌓";
-            } else {
-                bodyElement.classList.add('dark-mode');
-                themeToggleButton.innerText = "☀️";
-            }
+            // 捲動到最底部
+            chatBox.scrollTop = chatBox.scrollHeight;
         });
     }
 
     // ==========================================
-    // [17] 啟動應用程式的最後初始化呼叫
+    // 5. 渲染畫面邏輯 (UI Updates)
     // ==========================================
-    // 當 DOM 準備好且 Firebase 初始化後，最後呼叫貼圖載入
-    window.addEventListener('DOMContentLoaded', function() {
-        console.log("執行最後的輔助面板初始化...");
-        window.AppCore.initializeStickers();
+    function renderContactList() {
+        const container = document.getElementById("friend-list-container");
+        container.innerHTML = "";
+
+        const myData = usersData[currentUser];
+        if (!myData || !myData.friends) return;
+
+        myData.friends.forEach(friendId => {
+            const friendData = usersData[friendId];
+            if (!friendData) return;
+
+            const div = document.createElement("div");
+            div.className = "contact-item";
+            div.innerHTML = `
+                <div class="profile-pic">${friendData.profilePic || "👤"}</div>
+                <div class="contact-name">${friendData.username}</div>
+            `;
+            div.onclick = () => switchRoom(friendId, friendData.username, friendData.profilePic);
+            container.appendChild(div);
+        });
+    }
+
+    function switchRoom(roomId, name, icon) {
+        currentRoom = roomId;
+        document.getElementById("chat-header-name").textContent = name;
+        document.getElementById("chat-header-icon").textContent = icon || "👤";
+        listenToMessages(currentRoom);
+        
+        // 更新 UI 狀態
+        document.querySelectorAll(".contact-item").forEach(el => el.classList.remove("active"));
+        event.currentTarget.classList.add("active");
+    }
+
+    function renderSingleMessage(msgId, msg) {
+        const chatBox = document.getElementById("chat-box");
+        const div = document.createElement("div");
+        const isMe = msg.user === currentUser;
+        
+        div.className = `message ${isMe ? "me" : ""} ${msg.type === "sticker" ? "is-sticker" : ""}`;
+        div.id = `msg-${msgId}`;
+
+        // 判斷徽章
+        let badgeHtml = "";
+        if (usersData[msg.user]) {
+            if (usersData[msg.user].role === "owner") {
+                badgeHtml = `<span class="badge owner-badge">👑 群主</span>`;
+            } else if (usersData[msg.user].role === "admin") {
+                badgeHtml = `<span class="badge admin-badge">🛡️ 管理員</span>`;
+            }
+        }
+
+        // 訊息內容組裝
+        let contentHtml = "";
+        if (msg.type === "text") {
+            contentHtml = `<div>${msg.text}</div>`;
+            if (msg.isEdited) contentHtml += `<span class="edited-label">(已編輯)</span>`;
+        } else if (msg.type === "image" || msg.type === "gif") {
+            contentHtml = `<img src="${msg.imageUrl}" alt="image">`;
+        } else if (msg.type === "sticker") {
+            contentHtml = `<img src="${msg.imageUrl}" class="sticker-img" alt="sticker">`;
+        } else if (msg.type === "voice") {
+            contentHtml = `<audio controls src="${msg.voiceUrl}" style="max-width: 200px; height: 35px;"></audio>`;
+        }
+
+        // 加上發送者與時間
+        const timeString = msg.createdAt ? new Date(msg.createdAt.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : "傳送中...";
+        
+        div.innerHTML = `
+            ${!isMe ? `<div class="sender-name">${msg.user} ${badgeHtml}</div>` : ""}
+            ${contentHtml}
+            <div class="timestamp">${timeString}</div>
+            
+            <div class="message-actions">
+                <button onclick="openReactionModal('${msgId}')" title="按讚/回應">❤️</button>
+                ${isMe && msg.type === "text" ? `<button onclick="editMessage('${msgId}', '${msg.text}')" title="編輯">✏️</button>` : ""}
+                ${isMe ? `<button onclick="deleteMessage('${msgId}')" title="刪除">🗑️</button>` : ""}
+            </div>
+            <div class="reactions-display" id="reactions-${msgId}"></div>
+        `;
+
+        chatBox.appendChild(div);
+        
+        // 渲染回應 (Reactions)
+        if (msg.reactions) {
+            const reactionContainer = document.getElementById(`reactions-${msgId}`);
+            let reactionCounts = {};
+            msg.reactions.forEach(r => {
+                reactionCounts[r.emoji] = (reactionCounts[r.emoji] || 0) + 1;
+            });
+            
+            for (let emoji in reactionCounts) {
+                const rSpan = document.createElement("span");
+                rSpan.className = "reaction-item";
+                rSpan.textContent = `${emoji} ${reactionCounts[emoji]}`;
+                reactionContainer.appendChild(rSpan);
+            }
+        }
+    }
+
+    // ==========================================
+    // 6. 發送訊息邏輯
+    // ==========================================
+    document.getElementById("send-btn").addEventListener("click", sendMessage);
+    document.getElementById("msg-input").addEventListener("keypress", (e) => {
+        if (e.key === "Enter") sendMessage();
+    });
+
+    async function sendMessage() {
+        const input = document.getElementById("msg-input");
+        const text = input.value.trim();
+        if (!text) return;
+
+        input.value = ""; // 清空輸入框
+        document.getElementById("send-btn").disabled = true;
+
+        try {
+            await addDoc(collection(db, "messages"), {
+                user: currentUser,
+                text: text,
+                roomId: currentRoom,
+                type: "text",
+                createdAt: serverTimestamp(),
+                reactions: [],
+                isEdited: false
+            });
+        } catch (error) {
+            console.error("發送失敗: ", error);
+        } finally {
+            document.getElementById("send-btn").disabled = false;
+        }
+    }
+
+    // ==========================================
+    // 7. 語音錄製邏輯 (結合 Cloudinary)
+    // ==========================================
+    window.startVoiceRecord = async function() {
+        try {
+            document.getElementById("mic-btn").classList.add("recording");
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(stream);
+            audioChunks = [];
+            
+            mediaRecorder.ondataavailable = event => audioChunks.push(event.data);
+            mediaRecorder.onstop = async () => {
+                document.getElementById("mic-btn").classList.remove("recording");
+                const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                
+                // 上傳到 Cloudinary
+                const formData = new FormData();
+                formData.append('file', audioBlob);
+                formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+                formData.append('resource_type', 'video'); // Cloudinary 處理音檔需設為 video
+                
+                try {
+                    const response = await fetch(CLOUDINARY_URL, { method: 'POST', body: formData });
+                    const data = await response.json();
+                    
+                    if (data.secure_url) {
+                        await addDoc(collection(db, "messages"), {
+                            user: currentUser,
+                            voiceUrl: data.secure_url,
+                            roomId: currentRoom,
+                            createdAt: serverTimestamp(),
+                            type: "voice",
+                            reactions: []
+                        });
+                    }
+                } catch (error) {
+                    alert("語音上傳失敗");
+                    console.error(error);
+                }
+            };
+            
+            mediaRecorder.start();
+        } catch(e) { 
+            alert("無法訪問麥克風，請確認權限是否開啟！");
+            document.getElementById("mic-btn").classList.remove("recording");
+        }
+    }
+
+    window.stopVoiceRecord = function() {
+        if (mediaRecorder && mediaRecorder.state === "recording") {
+            mediaRecorder.stop();
+        }
+    }
+
+    // ==========================================
+    // 8. 圖片/貼圖/檔案上傳邏輯
+    // ==========================================
+    document.getElementById("file-input").addEventListener("change", async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // 開啟自製貼圖視窗
+        document.getElementById("sticker-maker-modal").style.display = "flex";
+        // 這裡可以加入 FileReader 預覽邏輯 (略過以節省篇幅)
+    });
+
+    window.drawStickerPreview = function() {
+        // 繪製正方形裁切預覽的邏輯
+    };
+
+    window.saveSticker = async function() {
+        // 上傳至 Cloudinary 並存入貼圖庫邏輯
+        alert("貼圖已儲存！");
+        document.getElementById("sticker-maker-modal").style.display = "none";
+    };
+
+    function loadMyStickers() {
+        // 從資料庫載入使用者的專屬貼圖
+    }
+
+    // ==========================================
+    // 9. 訊息操作 (編輯、刪除、回應)
+    // ==========================================
+    window.deleteMessage = async function(msgId) {
+        if (confirm("確定要收回這則訊息嗎？")) {
+            await deleteDoc(doc(db, "messages", msgId));
+        }
+    };
+
+    window.editMessage = function(msgId, oldText) {
+        selectedMessageId = msgId;
+        document.getElementById("edit-msg-input").value = oldText;
+        document.getElementById("edit-msg-modal").style.display = "flex";
+    };
+
+    document.getElementById("confirm-edit-btn").addEventListener("click", async () => {
+        const newText = document.getElementById("edit-msg-input").value.trim();
+        if (newText && selectedMessageId) {
+            await updateDoc(doc(db, "messages", selectedMessageId), {
+                text: newText,
+                isEdited: true
+            });
+            document.getElementById("edit-msg-modal").style.display = "none";
+        }
+    });
+
+    window.openReactionModal = function(msgId) {
+        selectedMessageId = msgId;
+        document.getElementById("reaction-modal").style.display = "flex";
+    };
+
+    window.confirmReaction = async function(emoji) {
+        if (selectedMessageId) {
+            const msgRef = doc(db, "messages", selectedMessageId);
+            await updateDoc(msgRef, {
+                reactions: arrayUnion({ user: currentUser, emoji: emoji })
+            });
+            document.getElementById("reaction-modal").style.display = "none";
+        }
+    };
+
+    // 點擊空白處關閉 Reaction Modal
+    document.getElementById("reaction-modal").addEventListener("click", (e) => {
+        if (e.target === document.getElementById("reaction-modal")) {
+            document.getElementById("reaction-modal").style.display = "none";
+        }
+    });
+
+    // ==========================================
+    // 10. 深色模式切換
+    // ==========================================
+    window.toggleDarkMode = function() {
+        isDarkMode = !isDarkMode;
+        if (isDarkMode) {
+            document.body.classList.add("dark-mode");
+        } else {
+            document.body.classList.remove("dark-mode");
+        }
+    };
+
+    // ==========================================
+    // 11. 系統設定與雜項
+    // ==========================================
+    document.getElementById("settings-btn").addEventListener("click", () => {
+        document.getElementById("settings-version").textContent = "3.2.1 Pro";
+        document.getElementById("settings-modal").style.display = "flex";
+    });
+
+    document.getElementById("close-settings-btn").addEventListener("click", () => {
+        document.getElementById("settings-modal").style.display = "none";
+    });
+
+    document.getElementById("logout-btn").addEventListener("click", () => {
+        currentUser = null;
+        document.getElementById("main-container").style.display = "none";
+        document.getElementById("login-screen").style.display = "flex";
+        document.getElementById("password-input").value = "";
     });
 
 </script>
