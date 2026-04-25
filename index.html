@@ -58,7 +58,7 @@
         #confirm-group-btn { background: #e5a935; color: white; }
         #cancel-group-btn { background: #ccc; color: #333; }
 
-        #group-friend-list { max-height: 150px; overflow-y: auto; text-align: left; margin: 10px 0; border: 1px solid #eee; padding: 8px; border-radius: 5px; background: #fafafa; }
+        #group-friend-list, #invite-friend-list { max-height: 150px; overflow-y: auto; text-align: left; margin: 10px 0; border: 1px solid #eee; padding: 8px; border-radius: 5px; background: #fafafa; }
         .group-friend-item { display: flex; align-items: center; gap: 8px; padding: 5px 0; border-bottom: 1px solid #eee; }
         .group-friend-item:last-child { border-bottom: none; }
         .group-friend-item label { cursor: pointer; font-size: 14px; color: #333; flex: 1; }
@@ -145,7 +145,7 @@
         .dark-mode .modal-content input, .dark-mode .modal-content select { background: #444; color: #fff; border-color: #555; }
         .dark-mode #info-extra { background: #1a1a1a !important; }
         
-        .dark-mode #group-friend-list { background: #222 !important; border-color: #444 !important; }
+        .dark-mode #group-friend-list, .dark-mode #invite-friend-list { background: #222 !important; border-color: #444 !important; }
         .dark-mode .group-friend-item { border-color: #444; }
         .dark-mode .reaction-picker { background: #333; }
         .dark-mode .reaction-btn { background: #444; }
@@ -253,8 +253,20 @@
         </div>
     </div>
 
+    <div id="invite-group-modal" class="modal-overlay" style="z-index: 60;">
+        <div class="modal-content" style="width: 280px;">
+            <h3>邀請好友加入</h3>
+            <p style="font-size: 12px; color: #666; margin-bottom: 5px; text-align: left; margin-top: 10px;">選擇要邀請的好友：</p>
+            <div id="invite-friend-list"></div>
+            <div class="modal-btns">
+                <button onclick="document.getElementById('invite-group-modal').style.display='none'">取消</button>
+                <button id="confirm-invite-btn" style="background: #128c7e; color: white;">邀請加入</button>
+            </div>
+        </div>
+    </div>
+
     <div id="info-modal" class="modal-overlay">
-        <div class="modal-content" style="width: 260px;">
+        <div class="modal-content" style="width: 280px;">
             <div style="font-size: 50px; margin-bottom: 10px; width: 80px; height: 80px; margin: 0 auto; display: flex; align-items: center; justify-content: center; border-radius: 50%; overflow: hidden; background: #dfe5e7;" id="info-icon">👥</div>
             <h3 id="info-name" style="margin: 10px 0 0 0; color: #333;">名稱</h3>
             <p id="info-status" style="color: #128c7e; font-size: 14px; font-weight: bold; margin-top: 5px;">狀態</p>
@@ -373,7 +385,7 @@
     const CLOUDINARY_UPLOAD_PRESET = "ml_default";
     const TENOR_API_KEY = "LIVDSRZULELA"; 
 
-    const CLIENT_VERSION = 13; 
+    const CLIENT_VERSION = 14; 
 
     const configRef = doc(db, "system", "config");
     let versionCheckDone = false;
@@ -407,6 +419,7 @@
     let messageEditingId = null;
     let typingTimeout = null;
     let reminders = [];
+    let currentInviteGroupId = null; // 紀錄正在邀請朋友的群組 ID
 
     document.addEventListener("visibilitychange", () => {
         if (!document.hidden) unreadNotificationCount = 0;
@@ -613,7 +626,6 @@
         }
     };
 
-    // 👇 升級與降級管理員的邏輯
     window.toggleAdmin = async function(groupId, targetUser, isPromoting) {
         if (!confirm(`確定要將「${targetUser}」${isPromoting ? '升為管理員' : '取消管理員'}嗎？`)) return;
 
@@ -649,7 +661,97 @@
         }
     };
 
-    // 👇 群組名單顯示與權限按鈕
+    // 👇 打開「邀請好友」彈出視窗的邏輯
+    window.openInviteModal = async function(groupId) {
+        currentInviteGroupId = groupId;
+        const inviteModal = document.getElementById('invite-group-modal');
+        const inviteList = document.getElementById('invite-friend-list');
+        
+        inviteModal.style.display = 'flex';
+        inviteList.innerHTML = "<p style='font-size:12px; color:#999; text-align:center;'>載入好友中...</p>";
+        
+        try {
+            // 抓取自己的好友名單
+            const myRef = doc(db, "users", currentUser);
+            const mySnap = await getDoc(myRef);
+            if (!mySnap.exists()) return;
+            
+            const myData = mySnap.data();
+            const myFriends = myData.friends || [];
+            
+            // 抓取群組目前已有的成員
+            const usersSnap = await getDocs(collection(db, "users"));
+            let currentMembers = [];
+            usersSnap.forEach(docSnap => {
+                const uData = docSnap.data();
+                if (uData.groups && uData.groups.some(g => g.id === groupId)) {
+                    currentMembers.push(docSnap.id);
+                }
+            });
+            
+            // 過濾掉已經在群組裡的好友
+            const availableFriends = myFriends.filter(f => !currentMembers.includes(f));
+            
+            inviteList.innerHTML = "";
+            if (availableFriends.length === 0) {
+                inviteList.innerHTML = "<p style='font-size:12px; color:#999; text-align:center; padding:10px;'>您目前沒有可邀請的好友<br>(好友皆已在群組內)</p>";
+            } else {
+                availableFriends.forEach(friend => {
+                    const div = document.createElement("div");
+                    div.className = "group-friend-item";
+                    div.innerHTML = `
+                        <input type="checkbox" id="inv-${friend}" value="${friend}">
+                        <label for="inv-${friend}" style="color: #333;">${friend}</label>
+                    `;
+                    inviteList.appendChild(div);
+                });
+            }
+        } catch (e) {
+            inviteList.innerHTML = "<p style='color:red; font-size:12px;'>載入失敗</p>";
+        }
+    };
+
+    // 👇 確定邀請好友加入群組
+    document.getElementById('confirm-invite-btn').onclick = async () => {
+        if (!currentInviteGroupId) return;
+        
+        const checkboxes = document.querySelectorAll("#invite-friend-list input[type='checkbox']:checked");
+        let selectedFriends = Array.from(checkboxes).map(cb => cb.value);
+        
+        if (selectedFriends.length === 0) return alert("請至少選擇一位好友！");
+        
+        const btn = document.getElementById('confirm-invite-btn');
+        btn.innerText = "邀請中...";
+        btn.disabled = true;
+        
+        try {
+            // 從自己的群組資料裡複製這份群組資訊給新朋友
+            const myRef = doc(db, "users", currentUser);
+            const mySnap = await getDoc(myRef);
+            const groupData = mySnap.data().groups.find(g => g.id === currentInviteGroupId);
+            
+            if (!groupData) throw new Error("群組資料錯誤");
+            
+            const promises = [];
+            for (const friend of selectedFriends) {
+                const friendRef = doc(db, "users", friend);
+                promises.push(updateDoc(friendRef, {
+                    groups: arrayUnion(groupData)
+                }));
+            }
+            
+            await Promise.all(promises);
+            alert("邀請成功！");
+            document.getElementById('invite-group-modal').style.display = 'none';
+            showGroupInfo(document.getElementById('info-name').innerText, currentInviteGroupId); // 重新整理名單
+        } catch(e) {
+            alert("邀請失敗");
+        } finally {
+            btn.innerText = "邀請加入";
+            btn.disabled = false;
+        }
+    };
+
     async function showGroupInfo(groupName, groupId) {
         infoModal.style.display = 'flex';
         infoName.innerText = groupName;
@@ -679,8 +781,13 @@
                 }
             });
 
-            let listHtml = `<strong>群組成員 (${membersList.length} 人)：</strong><br>
-                <div style="margin-top:10px; max-height:160px; overflow-y:auto; background:#fff; border:1px solid #ddd; border-radius:5px; padding:5px;">`;
+            // 👇 這裡加上了「➕ 邀請好友」的按鈕
+            let listHtml = `
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                    <strong>群組成員 (${membersList.length} 人)：</strong>
+                    <button onclick="openInviteModal('${groupId}')" style="background:#128c7e; color:white; border:none; border-radius:4px; padding:4px 8px; font-size:12px; cursor:pointer; font-weight:bold; box-shadow:0 1px 2px rgba(0,0,0,0.2);">➕ 邀請好友</button>
+                </div>
+                <div style="max-height:160px; overflow-y:auto; background:#fff; border:1px solid #ddd; border-radius:5px; padding:5px;">`;
 
             membersList.forEach(m => {
                 let badgeHtml = "";
@@ -693,7 +800,6 @@
                     badgeHtml = `<span class="badge admin-badge">🛡️ 管理員</span>`;
                 }
 
-                // 群主可以設定其他人的管理員權限
                 if (currentUser === groupOwner && m !== groupOwner) {
                     if (isAdmin) {
                         adminBtnHtml = `<button onclick="toggleAdmin('${groupId}', '${m}', false)" style="background:#f39c12; color:white; border:none; border-radius:4px; padding:4px 8px; font-size:12px; cursor:pointer; font-weight:bold; margin-right:5px;">降級</button>`;
@@ -703,7 +809,6 @@
                 }
 
                 let removeBtnHtml = "";
-                // 判斷踢人權限：群主可以踢任何人，管理員可以踢一般成員
                 const canKick = (currentUser === groupOwner && m !== groupOwner) || 
                                 (groupAdmins.includes(currentUser) && m !== groupOwner && !groupAdmins.includes(m));
 
@@ -791,7 +896,6 @@
             infoExtra.innerHTML = `<strong>帳號：</strong> ${targetUser}<br><br>他是此群組的成員。`;
             actionBtn.style.display = "block";
             
-            // 如果我是群主或管理員，且對方不是群主，我就可以踢他
             if ((currentUser === currentGroupOwner && targetUser !== currentGroupOwner) || 
                 (currentGroupAdmins.includes(currentUser) && targetUser !== currentGroupOwner && !currentGroupAdmins.includes(targetUser))) {
                 actionBtn.innerText = "🚫 從群組移除";
